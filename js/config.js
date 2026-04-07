@@ -7,7 +7,7 @@
 ═══════════════════════════════════════════ */
 
 const SUPABASE_URL      = 'https://eudsyuwudzkoyfimodbt.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY_HERE';
+const SUPABASE_ANON_KEY = 'sb_publishable_7p7QOWTyNbNRNzQecd8HAw_bkcpf4J9';
 
 /* ── App config ── */
 const APP_NAME    = 'EDGE';
