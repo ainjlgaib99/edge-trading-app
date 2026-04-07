@@ -174,6 +174,12 @@ body::after {
   border-radius: 0 2px 2px 0;
 }
 
+/* Log Trade accent nav item */
+.nav-item--accent {
+  color: var(--accent);
+  font-weight: 600;
+}
+
 /* Playbook sub-items */
 .nav-sub {
   padding-left: calc(var(--space-3) + 16px);
@@ -318,13 +324,61 @@ body::after {
   .sidebar.open { transform: translateX(0); }
   .sidebar-backdrop.visible { display: block; }
   .topbar-hamburger { display: flex; }
-  #content { padding: var(--space-4); }
+  #content { padding: var(--space-4); padding-bottom: 80px; }
+  .mobile-bottom-nav { display: flex; }
 }
 
 @media (max-width: 480px) {
-  #content { padding: var(--space-3); }
+  #content { padding: var(--space-3); padding-bottom: 80px; }
   .stat-grid { grid-template-columns: 1fr 1fr !important; }
 }
+
+/* ── Mobile Bottom Nav ── */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 60px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 90;
+  align-items: stretch;
+  justify-content: space-around;
+  padding: 0 var(--space-2);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.mbn-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: var(--font-body);
+  font-size: 10px;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-1);
+  border-radius: var(--radius-md);
+  transition: color var(--t-fast);
+  min-height: 44px;
+}
+
+.mbn-item.active { color: var(--accent); }
+
+.mbn-item--log {
+  background: var(--accent);
+  color: #000 !important;
+  border-radius: var(--radius-lg);
+  padding: var(--space-2) var(--space-4);
+  margin: var(--space-2) 0;
+  font-weight: 600;
+}
+
+.mbn-item--log.active { background: var(--accent); }
 
 /* ══════════════════════════════
    AUTH LAYOUT (standalone pages)

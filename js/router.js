@@ -5,9 +5,13 @@
 
 const ROUTES = {
   dashboard:               { path: 'pages/dashboard.html',              label: 'Dashboard',      parent: 'EDGE' },
-  journal:                 { path: 'pages/journal.html',                 label: 'Journal',        parent: 'EDGE' },
-  timeline:                { path: 'pages/timeline.html',                label: 'Timeline',       parent: 'EDGE' },
-  profile:                 { path: 'pages/profile.html',                 label: 'Profile',        parent: 'EDGE' },
+  log:                     { path: 'pages/log.html',                    label: 'Log Trade',      parent: 'EDGE' },
+  journal:                 { path: 'pages/journal.html',                label: 'Journal',        parent: 'EDGE' },
+  levels:                  { path: 'pages/levels.html',                 label: 'Levels',         parent: 'EDGE' },
+  eval:                    { path: 'pages/eval.html',                   label: 'Eval Tracker',   parent: 'EDGE' },
+  timeline:                { path: 'pages/timeline.html',               label: 'Timeline',       parent: 'EDGE' },
+  settings:                { path: 'pages/settings.html',               label: 'Settings',       parent: 'EDGE' },
+  profile:                 { path: 'pages/profile.html',                label: 'Profile',        parent: 'EDGE' },
   'playbook/routine':      { path: 'pages/playbook/routine.html',        label: 'Morning Routine',  parent: 'Playbook' },
   'playbook/levels':       { path: 'pages/playbook/levels.html',         label: 'Picking Levels',   parent: 'Playbook' },
   'playbook/entry':        { path: 'pages/playbook/entry.html',          label: 'The Entry',        parent: 'Playbook' },
@@ -59,6 +63,7 @@ async function navigate(route, pushState = true) {
     // Update nav + breadcrumb
     _updateNav(route);
     _updateBreadcrumb(config.parent, config.label);
+    if (typeof _syncMobileNav === 'function') _syncMobileNav(route);
 
     // Push hash
     if (pushState) history.pushState({ route }, '', '#' + route);

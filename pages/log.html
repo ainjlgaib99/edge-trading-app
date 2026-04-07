@@ -1,0 +1,413 @@
+<div class="page-inner">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Log Trade</h1>
+      <p class="page-sub">Fill this out immediately after exiting. Be honest.</p>
+    </div>
+  </div>
+
+  <!-- Warning banners -->
+  <div id="logWarnings" style="margin-bottom: var(--space-4); display:flex; flex-direction:column; gap:var(--space-2);"></div>
+
+  <form id="tradeForm" onsubmit="submitTrade(event)">
+    <div class="card" style="margin-bottom:var(--space-4);">
+
+      <!-- Row 1: Instrument + Direction -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:var(--space-4); margin-bottom:var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Instrument</label>
+          <select class="form-select" id="f_instrument" required>
+            <option value="MNQ">MNQ</option>
+            <option value="MES">MES</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Direction</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-2);">
+            <button type="button" class="btn btn-secondary dir-btn active" id="dirLong" onclick="setDirection('Long')">▲ Long</button>
+            <button type="button" class="btn btn-secondary dir-btn" id="dirShort" onclick="setDirection('Short')">▼ Short</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Setup Type -->
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">Setup Type</label>
+        <select class="form-select" id="f_setup" required>
+          <option value="">Select setup...</option>
+          <option value="VAH Rejection">VAH Rejection</option>
+          <option value="VAL Bounce">VAL Bounce</option>
+          <option value="POC Retest Long">POC Retest Long</option>
+          <option value="POC Retest Short">POC Retest Short</option>
+          <option value="Second Tap">Second Tap</option>
+          <option value="Prev Day High Break">Prev Day High Break</option>
+          <option value="Prev Day Low Break">Prev Day Low Break</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <!-- Row 3: Prices -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-3);">
+        <div class="form-group">
+          <label class="form-label">Entry Price</label>
+          <input type="number" class="form-input" id="f_entry" step="0.25" placeholder="19245.00" oninput="calcRR()" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Stop Price</label>
+          <input type="number" class="form-input" id="f_stop" step="0.25" placeholder="19237.00" oninput="calcRR()" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Price</label>
+          <input type="number" class="form-input" id="f_target" step="0.25" placeholder="19261.00" oninput="calcRR()" required>
+        </div>
+      </div>
+
+      <!-- Planned RR display -->
+      <div id="plannedRRDisplay" style="display:none; margin-bottom:var(--space-4);">
+        <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--card);border-radius:var(--radius-md);border:1px solid var(--border);">
+          <span style="font-size:var(--text-sm);color:var(--muted);">Planned R:R</span>
+          <span id="plannedRRValue" style="font-family:var(--font-mono);font-size:var(--text-base);color:var(--accent);font-weight:500;">—</span>
+          <span style="font-size:var(--text-sm);color:var(--muted);">| Risk</span>
+          <span id="riskDisplay" style="font-family:var(--font-mono);font-size:var(--text-base);color:var(--text);">—</span>
+        </div>
+      </div>
+
+      <!-- Row 4: Exit + P&L -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-3);">
+        <div class="form-group">
+          <label class="form-label">Exit Price</label>
+          <input type="number" class="form-input" id="f_exit" step="0.25" placeholder="19261.00" oninput="calcRR()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">P&L ($)</label>
+          <input type="number" class="form-input" id="f_pnl" step="1" placeholder="+500 or -250" oninput="checkWarnings()">
+        </div>
+      </div>
+
+      <!-- Actual RR display -->
+      <div id="actualRRDisplay" style="display:none;margin-bottom:var(--space-4);">
+        <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);background:var(--card);border-radius:var(--radius-md);border:1px solid var(--border);">
+          <span style="font-size:var(--text-sm);color:var(--muted);">Actual R:R</span>
+          <span id="actualRRValue" style="font-family:var(--font-mono);font-size:var(--text-base);font-weight:500;">—</span>
+          <span style="font-size:var(--text-sm);color:var(--muted);">| Result</span>
+          <span id="resultDisplay" style="font-size:var(--text-sm);font-weight:600;">—</span>
+        </div>
+      </div>
+
+      <!-- Row 5: Emotional State + Grade -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Emotional State</label>
+          <select class="form-select" id="f_emotion">
+            <option value="Calm">Calm</option>
+            <option value="Confident">Confident</option>
+            <option value="Hesitant">Hesitant</option>
+            <option value="FOMO">FOMO</option>
+            <option value="Revenge">Revenge</option>
+            <option value="Frustrated">Frustrated</option>
+            <option value="Tired">Tired</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Trade Grade</label>
+          <select class="form-select" id="f_grade">
+            <option value="A">A — Perfect</option>
+            <option value="B" selected>B — Good</option>
+            <option value="C">C — Okay</option>
+            <option value="D">D — Poor</option>
+            <option value="F">F — Rules Broken</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Row 6: Followed Rules -->
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">Followed All Rules?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-2);">
+          <button type="button" class="btn btn-secondary rules-btn active" id="rulesYes" onclick="setRules(true)">✓ Yes — Clean Trade</button>
+          <button type="button" class="btn btn-secondary rules-btn" id="rulesNo" onclick="setRules(false)">✕ No — Broke Rules</button>
+        </div>
+      </div>
+
+      <!-- Rules broken (shown when No) -->
+      <div id="rulesBrokenSection" style="display:none; margin-bottom:var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Which rules did you break?</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-2);" id="rulesBrokenGrid">
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Chased entry"> Chased entry</label>
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Moved stop"> Moved stop</label>
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Over-risked"> Over-risked</label>
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Revenge traded"> Revenge traded</label>
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Traded after loss limit"> After loss limit</label>
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Bad setup"> Bad setup</label>
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Traded news"> Traded news</label>
+            <label class="rule-checkbox"><input type="checkbox" name="broken" value="Outside session"> Outside session</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 7: Notes -->
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="f_notes" rows="3" placeholder="What did you see? What did you learn? Be specific."></textarea>
+      </div>
+
+      <!-- Row 8: Screenshot -->
+      <div class="form-group">
+        <label class="form-label">Screenshot URL</label>
+        <input type="url" class="form-input" id="f_screenshot" placeholder="Paste TradingView chart link...">
+      </div>
+
+    </div>
+
+    <!-- Submit -->
+    <button type="submit" class="btn btn-primary" id="logSubmitBtn" style="width:100%;height:52px;font-size:var(--text-lg);font-weight:700;letter-spacing:0.05em;">
+      LOG TRADE
+    </button>
+  </form>
+</div>
+
+<style>
+.dir-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+.rules-btn.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+.rule-checkbox { display:flex; align-items:center; gap:var(--space-2); font-size:var(--text-sm); color:var(--text); cursor:pointer; padding:var(--space-2); border-radius:var(--radius-sm); }
+.rule-checkbox:hover { background:var(--card); }
+.rule-checkbox input { accent-color: var(--accent); }
+</style>
+
+<script>
+let _logDirection = 'Long';
+let _logFollowedRules = true;
+let _logTodayTrades = [];
+let _logSettings = null;
+
+async function init_log() {
+  const session = getAppSession();
+  if (!session) return;
+  _logSettings = getTraderConfig();
+  // Load today's trades for warning checks
+  try {
+    _logTodayTrades = await getTodayTrades(session.user.id);
+    checkWarnings();
+  } catch(e) { /* ignore */ }
+}
+
+function setDirection(dir) {
+  _logDirection = dir;
+  document.getElementById('dirLong').classList.toggle('active', dir === 'Long');
+  document.getElementById('dirShort').classList.toggle('active', dir === 'Short');
+  calcRR();
+}
+
+function setRules(followed) {
+  _logFollowedRules = followed;
+  document.getElementById('rulesYes').classList.toggle('active', followed);
+  document.getElementById('rulesNo').classList.toggle('active', !followed);
+  document.getElementById('rulesBrokenSection').style.display = followed ? 'none' : 'block';
+}
+
+function calcRR() {
+  const entry = parseFloat(document.getElementById('f_entry').value);
+  const stop  = parseFloat(document.getElementById('f_stop').value);
+  const target = parseFloat(document.getElementById('f_target').value);
+  const exit  = parseFloat(document.getElementById('f_exit').value);
+
+  const settings = _logSettings;
+  const plannedDisplay = document.getElementById('plannedRRDisplay');
+  const actualDisplay = document.getElementById('actualRRDisplay');
+
+  if (entry && stop && target) {
+    const risk = Math.abs(entry - stop);
+    const reward = Math.abs(target - entry);
+    const rr = risk > 0 ? (reward / risk).toFixed(2) : '—';
+
+    // Estimate risk in dollars (MNQ = $2/tick, MES = $1.25/tick, tick = 0.25)
+    const instr = document.getElementById('f_instrument').value;
+    const tickVal = instr === 'MNQ' ? 2 : 1.25;
+    const riskDollars = Math.round((risk / 0.25) * tickVal);
+
+    document.getElementById('plannedRRValue').textContent = `1:${rr}`;
+    document.getElementById('riskDisplay').textContent = `$${riskDollars}`;
+    plannedDisplay.style.display = 'block';
+    checkWarnings();
+  } else {
+    plannedDisplay.style.display = 'none';
+  }
+
+  if (entry && stop && exit) {
+    const risk = Math.abs(entry - stop);
+    const actualReward = (exit - entry) * (_logDirection === 'Long' ? 1 : -1);
+    const actualRR = risk > 0 ? (actualReward / risk).toFixed(2) : '0';
+
+    const pnlInput = document.getElementById('f_pnl');
+    const pnl = parseFloat(pnlInput.value);
+    const result = !isNaN(pnl) ? (pnl > 0 ? 'Win' : pnl < 0 ? 'Loss' : 'Breakeven') :
+                   (actualReward > 0 ? 'Win' : actualReward < 0 ? 'Loss' : 'Breakeven');
+
+    const rrEl = document.getElementById('actualRRValue');
+    rrEl.textContent = `1:${actualRR}`;
+    rrEl.style.color = result === 'Win' ? 'var(--green)' : result === 'Loss' ? 'var(--red)' : 'var(--text)';
+
+    const resultEl = document.getElementById('resultDisplay');
+    resultEl.textContent = result;
+    resultEl.style.color = result === 'Win' ? 'var(--green)' : result === 'Loss' ? 'var(--red)' : 'var(--muted)';
+    actualDisplay.style.display = 'block';
+  } else {
+    actualDisplay.style.display = 'none';
+  }
+}
+
+function checkWarnings() {
+  const warnings = [];
+  const s = _logSettings;
+  if (!s) return;
+
+  const entry = parseFloat(document.getElementById('f_entry').value);
+  const stop  = parseFloat(document.getElementById('f_stop').value);
+  const target = parseFloat(document.getElementById('f_target').value);
+
+  // Risk warning
+  if (entry && stop) {
+    const instr = document.getElementById('f_instrument').value;
+    const tickVal = instr === 'MNQ' ? 2 : 1.25;
+    const riskDollars = Math.round((Math.abs(entry - stop) / 0.25) * tickVal);
+    if (riskDollars > (s.max_risk_per_trade || 250)) {
+      warnings.push({ type: 'amber', msg: `⚠️ Risk ~$${riskDollars} exceeds your $${s.max_risk_per_trade || 250} max` });
+    }
+  }
+
+  // RR warning
+  if (entry && stop && target) {
+    const rr = Math.abs(target - entry) / Math.abs(entry - stop);
+    if (rr < (s.min_rr || 2)) {
+      warnings.push({ type: 'amber', msg: `⚠️ R:R is ${rr.toFixed(1)}:1 — below your ${s.min_rr || 2}:1 minimum` });
+    }
+  }
+
+  const todayLosses = _logTodayTrades.filter(t => t.result === 'Loss').length;
+  const todayCount = _logTodayTrades.length;
+
+  // Loss count warning
+  if (todayLosses >= (s.max_losses_per_day || 2)) {
+    warnings.push({ type: 'red', msg: `🛑 You have ${todayLosses} losses today — session should be OVER` });
+  }
+
+  // Trade count warning
+  if (todayCount >= (s.max_trades_per_day || 2)) {
+    warnings.push({ type: 'amber', msg: `⚠️ This will be trade #${todayCount + 1} today — your max is ${s.max_trades_per_day || 2}` });
+  }
+
+  const container = document.getElementById('logWarnings');
+  container.innerHTML = warnings.map(w => `
+    <div style="padding:var(--space-3) var(--space-4);border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;background:${w.type==='red'?'rgba(255,51,86,0.12)':'rgba(255,200,0,0.10)'};border:1px solid ${w.type==='red'?'rgba(255,51,86,0.4)':'rgba(255,200,0,0.3)'};color:${w.type==='red'?'var(--red)':'var(--yellow)'};">
+      ${w.msg}
+    </div>`).join('');
+}
+
+async function submitTrade(e) {
+  e.preventDefault();
+  const btn = document.getElementById('logSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    const session = getAppSession();
+    const entry = parseFloat(document.getElementById('f_entry').value);
+    const stop  = parseFloat(document.getElementById('f_stop').value);
+    const target = parseFloat(document.getElementById('f_target').value);
+    const exitP = parseFloat(document.getElementById('f_exit').value) || null;
+    const pnl   = parseFloat(document.getElementById('f_pnl').value) || 0;
+
+    const risk = Math.abs(entry - stop);
+    const reward = Math.abs(target - entry);
+    const plannedRR = risk > 0 ? parseFloat((reward / risk).toFixed(2)) : null;
+    const actualRR  = (exitP && risk > 0) ? parseFloat(((exitP - entry) * (_logDirection === 'Long' ? 1 : -1) / risk).toFixed(2)) : null;
+    const result = pnl > 0 ? 'Win' : pnl < 0 ? 'Loss' : 'Breakeven';
+
+    const instr = document.getElementById('f_instrument').value;
+    const tickVal = instr === 'MNQ' ? 2 : 1.25;
+    const riskAmount = Math.round((risk / 0.25) * tickVal);
+
+    const broken = Array.from(document.querySelectorAll('input[name="broken"]:checked')).map(el => el.value);
+
+    const trade = {
+      user_id: session.user.id,
+      date: new Date().toISOString().slice(0, 10),
+      instrument: instr,
+      direction: _logDirection,
+      setup_type: document.getElementById('f_setup').value,
+      entry_price: entry,
+      stop_price: stop,
+      target_price: target,
+      exit_price: exitP,
+      planned_rr: plannedRR,
+      actual_rr: actualRR,
+      pnl,
+      risk_amount: riskAmount,
+      result,
+      followed_rules: _logFollowedRules,
+      rules_broken: broken.length > 0 ? broken : null,
+      emotional_state: document.getElementById('f_emotion').value,
+      trade_grade: document.getElementById('f_grade').value,
+      screenshot: document.getElementById('f_screenshot').value || null,
+      notes: document.getElementById('f_notes').value || null,
+    };
+
+    await createTrade(trade);
+
+    // Optional Airtable sync (fire and forget)
+    const s = _logSettings;
+    if (s?.airtable_api_key && s?.airtable_base_id) {
+      syncToAirtable(trade, s).catch(() => {});
+    }
+
+    // Optional Slack risk check
+    if (s?.slack_webhook_url) {
+      postRiskCheck(session.user.id, pnl, result, s).catch(() => {});
+    }
+
+    toast('Trade logged!', 'success');
+    navigate('dashboard');
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'LOG TRADE';
+  }
+}
+
+async function syncToAirtable(trade, settings) {
+  const url = `https://api.airtable.com/v0/${settings.airtable_base_id}/${encodeURIComponent(settings.airtable_table_id || 'Trade Journal')}`;
+  await fetch(url, {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${settings.airtable_api_key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields: {
+      'Date': trade.date, 'Instrument': trade.instrument, 'Direction': trade.direction,
+      'Setup Type': trade.setup_type, 'Entry Price': trade.entry_price,
+      'Exit Price': trade.exit_price, 'P&L': trade.pnl, 'Result': trade.result,
+      'Planned RR': trade.planned_rr, 'Actual RR': trade.actual_rr,
+      'Emotion': trade.emotional_state, 'Notes': trade.notes || '',
+    }})
+  });
+}
+
+async function postRiskCheck(userId, pnl, result, settings) {
+  const today = await getTodayTrades(userId);
+  const todayLosses = today.filter(t => t.result === 'Loss').length;
+  const todayPnl = today.reduce((s, t) => s + (t.pnl || 0), 0);
+  const maxLosses = settings.max_losses_per_day || 2;
+
+  let msg = null;
+  if (todayLosses >= maxLosses) {
+    msg = `🛑 *SESSION OVER* — You've hit ${todayLosses} losses today. Walk away.`;
+  } else if (Math.abs(Math.min(0, todayPnl)) >= (settings.daily_loss_limit || 2000) * 0.7) {
+    msg = `🔶 *APPROACHING DAILY LIMIT* — Down $${Math.abs(todayPnl).toFixed(0)} today. Slow down.`;
+  }
+  if (msg) {
+    await fetch(settings.slack_webhook_url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: msg })
+    });
+  }
+}
+</script>

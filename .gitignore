@@ -1,0 +1,3 @@
+.vercel
+supabase/.temp/
+create_tables.sql

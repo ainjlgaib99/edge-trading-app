@@ -1,317 +1,240 @@
 <div class="page-inner">
-
-  <!-- Header -->
   <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-title">Journal</div>
-      <div class="page-subtitle">Every trade. No exceptions.</div>
+    <div>
+      <h1 class="page-title">Journal</h1>
+      <p class="page-sub">Every trade. No exceptions.</p>
     </div>
-    <div class="page-actions">
-      <button class="btn btn-primary" onclick="openJournalEntry()">+ New Entry</button>
-    </div>
+    <button class="btn btn-primary" onclick="navigate('log')">+ Log Trade</button>
   </div>
 
   <!-- Stats bar -->
-  <div class="stat-grid" id="journalStats" style="margin-bottom:var(--space-6)">
-    <div class="stat-card"><div class="stat-label">Total Trades</div><div class="stat-value" id="js_total">—</div></div>
-    <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value" id="js_wr">—</div></div>
-    <div class="stat-card"><div class="stat-label">Avg R:R</div><div class="stat-value" id="js_rr">—</div></div>
-    <div class="stat-card"><div class="stat-label">Total P&amp;L</div><div class="stat-value" id="js_pnl">—</div></div>
+  <div class="stat-grid" style="margin-bottom:var(--space-4);">
+    <div class="card stat-card"><div class="stat-label">Total Trades</div><div class="stat-value" id="js_total">—</div></div>
+    <div class="card stat-card"><div class="stat-label">Win Rate</div><div class="stat-value" id="js_wr">—</div></div>
+    <div class="card stat-card"><div class="stat-label">Avg R:R</div><div class="stat-value mono" id="js_rr">—</div></div>
+    <div class="card stat-card"><div class="stat-label">Total P&L</div><div class="stat-value mono" id="js_pnl">—</div></div>
   </div>
 
   <!-- Filter bar -->
-  <div class="card" style="margin-bottom:var(--space-4);padding:var(--space-4)">
-    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center">
-      <input class="form-input" type="date" id="f_start" style="width:auto" onchange="loadJournal()">
-      <input class="form-input" type="date" id="f_end"   style="width:auto" onchange="loadJournal()">
-      <select class="form-select" id="f_instrument" style="width:auto" onchange="loadJournal()">
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center;">
+      <input class="form-input" type="date" id="f_start" style="width:auto;" onchange="loadJournal()">
+      <input class="form-input" type="date" id="f_end" style="width:auto;" onchange="loadJournal()">
+      <select class="form-select" id="f_instrument" style="width:auto;" onchange="loadJournal()">
         <option value="all">All Instruments</option>
         <option value="MNQ">MNQ</option>
         <option value="MES">MES</option>
-        <option value="NQ">NQ</option>
-        <option value="ES">ES</option>
       </select>
-      <select class="form-select" id="f_result" style="width:auto" onchange="loadJournal()">
-        <option value="all">Win &amp; Loss</option>
-        <option value="win">Wins only</option>
-        <option value="loss">Losses only</option>
+      <select class="form-select" id="f_setup" style="width:auto;" onchange="loadJournal()">
+        <option value="all">All Setups</option>
+        <option value="VAH Rejection">VAH Rejection</option>
+        <option value="VAL Bounce">VAL Bounce</option>
+        <option value="POC Retest Long">POC Retest Long</option>
+        <option value="POC Retest Short">POC Retest Short</option>
+        <option value="Second Tap">Second Tap</option>
+        <option value="Other">Other</option>
+      </select>
+      <select class="form-select" id="f_result" style="width:auto;" onchange="loadJournal()">
+        <option value="all">All Results</option>
+        <option value="Win">Wins</option>
+        <option value="Loss">Losses</option>
+        <option value="Breakeven">Breakeven</option>
       </select>
       <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
     </div>
   </div>
 
-  <!-- Entries -->
-  <div class="table-wrap" id="journalTable">
-    <div class="loading-container"><div class="loading-spinner"></div></div>
+  <!-- Trade list -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div id="tradeList">
+      <div style="text-align:center;padding:var(--space-8);color:var(--muted);">Loading...</div>
+    </div>
   </div>
 
-  <!-- Entry detail (expanded) -->
-  <div id="entryDetail" style="display:none;margin-top:var(--space-4)"></div>
+  <!-- Analytics: by Setup -->
+  <div id="setupAnalytics" style="display:none;">
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <div class="card-header">Performance by Setup</div>
+      <div id="setupBreakdown"></div>
+    </div>
+
+    <!-- Analytics: by Emotion -->
+    <div class="card">
+      <div class="card-header">Emotional Patterns</div>
+      <div id="emotionBreakdown"></div>
+    </div>
+  </div>
 
 </div>
 
 <script>
-let _entries = [];
-let _expandedId = null;
+let _allTrades = [];
 
 async function init_journal() {
   const session = getAppSession();
   if (!session) return;
-  await loadJournal();
+  try {
+    _allTrades = await getTrades(session.user.id);
+    updateStats(_allTrades);
+    renderTradeList(_allTrades);
+    renderAnalytics(_allTrades);
+  } catch(e) { console.error(e); }
 }
 
 async function loadJournal() {
   const session = getAppSession();
   if (!session) return;
-  const userId = session.user.id;
-
   const filters = {
-    startDate:  document.getElementById('f_start')?.value      || null,
-    endDate:    document.getElementById('f_end')?.value        || null,
-    instrument: document.getElementById('f_instrument')?.value || 'all',
-    result:     document.getElementById('f_result')?.value     || 'all',
+    startDate: document.getElementById('f_start').value || null,
+    endDate: document.getElementById('f_end').value || null,
+    instrument: document.getElementById('f_instrument').value,
+    setup: document.getElementById('f_setup').value,
+    result: document.getElementById('f_result').value,
   };
-
   try {
-    const [entries, stats] = await Promise.all([
-      getJournalEntries(userId, filters),
-      getJournalStats(userId)
-    ]);
-    _entries = entries;
-    renderStats(stats);
-    renderTable(entries);
-  } catch (err) {
-    toast('Failed to load journal: ' + err.message, 'error');
-  }
-}
-
-function renderStats(s) {
-  if (!s) return;
-  document.getElementById('js_total').textContent = s.total || '0';
-  const wr = document.getElementById('js_wr');
-  wr.textContent = s.total > 0 ? formatPct(s.winRate) : '—';
-  wr.className   = 'stat-value ' + (s.winRate >= 50 ? 'green' : 'red');
-  document.getElementById('js_rr').textContent  = s.avgRR > 0 ? formatRR(s.avgRR) : '—';
-  const pnlEl = document.getElementById('js_pnl');
-  pnlEl.textContent = s.totalPnl !== 0 ? formatCurrencyFull(s.totalPnl) : '$0';
-  pnlEl.className   = 'stat-value ' + (s.totalPnl > 0 ? 'green' : s.totalPnl < 0 ? 'red' : '');
-}
-
-function renderTable(entries) {
-  const el = document.getElementById('journalTable');
-  if (!entries.length) {
-    el.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title">No trades found</div>
-        <div class="empty-msg">Log your first trade or adjust the filters.</div>
-        <button class="btn btn-primary btn-sm" onclick="openJournalEntry()">+ Log Trade</button>
-      </div>`;
-    return;
-  }
-
-  el.innerHTML = `
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Instrument</th>
-          <th>Setup</th>
-          <th class="text-right">Entry</th>
-          <th class="text-right">Stop</th>
-          <th class="text-right">P&amp;L</th>
-          <th class="text-right">R:R</th>
-          <th>Rules</th>
-          <th>Emotion</th>
-        </tr>
-      </thead>
-      <tbody id="journalBody">
-        ${entries.map(e => `
-          <tr data-id="${e.id}" onclick="toggleEntry('${e.id}')">
-            <td class="text-mono" style="font-size:var(--text-xs)">${formatDate(e.date)}</td>
-            <td>${e.instrument || '—'}</td>
-            <td style="color:var(--muted);font-size:var(--text-xs);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.setup_type || '—'}</td>
-            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.entry_price || '—'}</td>
-            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.stop_price  || '—'}</td>
-            <td class="text-right ${pnlClass(e.pnl)}">${e.pnl != null ? (e.pnl >= 0 ? '+' : '') + '$' + Math.abs(e.pnl).toFixed(0) : '—'}</td>
-            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.actual_rr ? formatRR(e.actual_rr) : '—'}</td>
-            <td><span class="badge ${e.followed_rules ? 'badge-success' : 'badge-danger'}">${e.followed_rules ? 'Yes' : 'No'}</span></td>
-            <td style="color:var(--muted);font-size:var(--text-xs)">${e.emotional_state ? e.emotional_state + '/10' : '—'}</td>
-          </tr>
-          <tr id="detail-${e.id}" style="display:none">
-            <td colspan="9" style="padding:0">
-              <div style="padding:var(--space-4) var(--space-6);background:var(--surface);border-top:1px solid var(--border)">
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-4)">
-                  <div><div class="form-label">Target Price</div><div class="text-mono" style="margin-top:4px">${e.target_price || '—'}</div></div>
-                  <div><div class="form-label">Planned R:R</div><div class="text-mono" style="margin-top:4px">${e.planned_rr ? formatRR(e.planned_rr) : '—'}</div></div>
-                  <div><div class="form-label">Actual Exit</div><div class="text-mono" style="margin-top:4px">${e.actual_exit || '—'}</div></div>
-                </div>
-                ${e.notes ? `<div class="form-label" style="margin-bottom:4px">Notes</div><div style="font-size:var(--text-sm);color:var(--muted);line-height:1.6">${e.notes}</div>` : ''}
-                <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4)">
-                  <button class="btn btn-secondary btn-sm" onclick="editEntry('${e.id}')">Edit</button>
-                  <button class="btn btn-danger btn-sm" onclick="deleteEntryConfirm('${e.id}')">Delete</button>
-                </div>
-              </div>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>`;
-}
-
-function toggleEntry(id) {
-  const row = document.getElementById('detail-' + id);
-  if (!row) return;
-  const isOpen = row.style.display !== 'none';
-  // Close all
-  document.querySelectorAll('[id^="detail-"]').forEach(r => r.style.display = 'none');
-  if (!isOpen) row.style.display = 'table-row';
+    const trades = await getTrades(session.user.id, filters);
+    updateStats(trades);
+    renderTradeList(trades);
+  } catch(e) { console.error(e); }
 }
 
 function clearFilters() {
-  document.getElementById('f_start').value      = '';
-  document.getElementById('f_end').value        = '';
-  document.getElementById('f_instrument').value = 'all';
-  document.getElementById('f_result').value     = 'all';
-  loadJournal();
+  ['f_start','f_end'].forEach(id => document.getElementById(id).value = '');
+  ['f_instrument','f_setup','f_result'].forEach(id => document.getElementById(id).value = 'all');
+  updateStats(_allTrades);
+  renderTradeList(_allTrades);
 }
 
-function openJournalEntry(existing) {
-  const isEdit = !!existing;
-  const e = existing || {};
-  const today = new Date().toISOString().slice(0,10);
+function updateStats(trades) {
+  const wins = trades.filter(t => t.result === 'Win').length;
+  const totalPnl = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+  const rrVals = trades.filter(t => t.actual_rr != null && t.result === 'Win').map(t => t.actual_rr);
+  const avgRR = rrVals.length ? (rrVals.reduce((a,b)=>a+b,0)/rrVals.length).toFixed(2) : '—';
+  const wr = trades.length ? ((wins/trades.length)*100).toFixed(0) : '0';
 
-  modal(isEdit ? 'Edit Trade' : 'New Journal Entry', `
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Date</label>
-        <input class="form-input" type="date" id="je_date" value="${e.date || today}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Instrument</label>
-        <select class="form-select" id="je_instrument">
-          ${['MNQ','MES','NQ','ES'].map(i => `<option ${e.instrument===i?'selected':''}>${i}</option>`).join('')}
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Setup Type</label>
-      <select class="form-select" id="je_setup">
-        ${['VAH Rejection','VAL Bounce','POC Retest','Second Tap','Other'].map(s =>
-          `<option ${e.setup_type===s?'selected':''}>${s}</option>`).join('')}
-      </select>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
-      <div class="form-group">
-        <label class="form-label">Entry</label>
-        <input class="form-input" type="number" id="je_entry" value="${e.entry_price||''}" step="0.25">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Stop</label>
-        <input class="form-input" type="number" id="je_stop" value="${e.stop_price||''}" step="0.25">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Target</label>
-        <input class="form-input" type="number" id="je_target" value="${e.target_price||''}" step="0.25">
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
-      <div class="form-group">
-        <label class="form-label">Planned R:R</label>
-        <input class="form-input" type="number" id="je_planned_rr" value="${e.planned_rr||''}" step="0.1">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Actual Exit</label>
-        <input class="form-input" type="number" id="je_exit" value="${e.actual_exit||''}" step="0.25">
-      </div>
-      <div class="form-group">
-        <label class="form-label">P&amp;L ($)</label>
-        <input class="form-input" type="number" id="je_pnl" value="${e.pnl||''}">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Followed Rules?</label>
-        <select class="form-select" id="je_rules">
-          <option value="true" ${e.followed_rules!==false?'selected':''}>Yes ✓</option>
-          <option value="false" ${e.followed_rules===false?'selected':''}>No ✕</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Emotional State (1–10)</label>
-        <input class="form-input" type="number" id="je_emotion" value="${e.emotional_state||''}" min="1" max="10">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notes</label>
-      <textarea class="form-textarea" id="je_notes">${e.notes||''}</textarea>
-    </div>
-  `, [
-    { label: 'Cancel', type: 'secondary', onClick: () => closeModal() },
-    { label: isEdit ? 'Update' : 'Save', type: 'primary', onClick: () => saveJournalEntry(isEdit ? e.id : null) }
-  ]);
+  document.getElementById('js_total').textContent = trades.length;
+  const wrEl = document.getElementById('js_wr');
+  wrEl.textContent = `${wr}%`;
+  wrEl.style.color = wr >= 60 ? 'var(--green)' : wr >= 40 ? 'var(--text)' : 'var(--red)';
+  document.getElementById('js_rr').textContent = avgRR !== '—' ? `${avgRR}R` : '—';
+  const pEl = document.getElementById('js_pnl');
+  pEl.textContent = `${totalPnl >= 0 ? '+' : ''}$${Math.abs(totalPnl).toFixed(0)}`;
+  pEl.style.color = totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
 }
 
-async function saveJournalEntry(editId) {
-  const session = getAppSession();
-  if (!session) return;
-
-  const entry = Number(document.getElementById('je_entry').value);
-  const stop  = Number(document.getElementById('je_stop').value);
-  const exit  = Number(document.getElementById('je_exit').value);
-  let actualRR = null;
-  if (entry && stop && exit) {
-    const risk   = Math.abs(entry - stop);
-    const reward = Math.abs(exit - entry);
-    actualRR = risk > 0 ? +(reward / risk).toFixed(2) : null;
+function renderTradeList(trades) {
+  const el = document.getElementById('tradeList');
+  if (!trades.length) {
+    el.innerHTML = `<div style="text-align:center;padding:var(--space-8);color:var(--muted);font-size:var(--text-sm);">No trades match your filters.</div>`;
+    return;
   }
 
-  const data = {
-    user_id:         session.user.id,
-    date:            document.getElementById('je_date').value,
-    instrument:      document.getElementById('je_instrument').value,
-    setup_type:      document.getElementById('je_setup').value,
-    entry_price:     entry || null,
-    stop_price:      stop  || null,
-    target_price:    Number(document.getElementById('je_target').value)  || null,
-    actual_exit:     exit  || null,
-    pnl:             Number(document.getElementById('je_pnl').value)     || null,
-    planned_rr:      Number(document.getElementById('je_planned_rr').value) || null,
-    actual_rr:       actualRR,
-    followed_rules:  document.getElementById('je_rules').value === 'true',
-    emotional_state: Number(document.getElementById('je_emotion').value) || null,
-    notes:           document.getElementById('je_notes').value.trim()    || null,
-  };
-
-  try {
-    if (editId) {
-      await updateJournalEntry(editId, data);
-      toast('Trade updated ✓', 'success');
-    } else {
-      await createJournalEntry(data);
-      toast('Trade logged ✓', 'success');
-    }
-    closeModal();
-    await loadJournal();
-  } catch (err) {
-    toast('Failed to save: ' + err.message, 'error');
-  }
+  el.innerHTML = trades.map((t, i) => {
+    const isWin = t.result === 'Win', isLoss = t.result === 'Loss';
+    const pnlColor = isWin ? 'var(--green)' : isLoss ? 'var(--red)' : 'var(--muted)';
+    const dir = t.direction === 'Long' ? '▲' : '▼';
+    const dirColor = t.direction === 'Long' ? 'var(--green)' : 'var(--red)';
+    const rulesIcon = t.followed_rules ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✕</span>';
+    const sign = (t.pnl||0) >= 0 ? '+' : '';
+    return `
+      <div class="trade-row" onclick="toggleTradeDetail('${t.id}')" style="cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--border);">
+          <span style="color:${dirColor};width:16px;text-align:center;flex-shrink:0;">${dir}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--text-sm);font-weight:500;">${t.setup_type}</div>
+            <div style="font-size:var(--text-xs);color:var(--muted);">${t.instrument} · ${t.date} · ${t.emotional_state || '—'}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:600;color:${pnlColor};">${sign}$${Math.abs(t.pnl||0)}</div>
+            <div style="font-size:var(--text-xs);color:var(--muted);">${rulesIcon} ${t.trade_grade || 'B'}</div>
+          </div>
+        </div>
+        <div id="detail_${t.id}" style="display:none;padding:var(--space-3) 0 var(--space-4) 24px;border-bottom:1px solid var(--border);">
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3);margin-bottom:var(--space-3);font-size:var(--text-xs);">
+            <div><span style="color:var(--muted)">Entry: </span>${t.entry_price || '—'}</div>
+            <div><span style="color:var(--muted)">Stop: </span>${t.stop_price || '—'}</div>
+            <div><span style="color:var(--muted)">Target: </span>${t.target_price || '—'}</div>
+            <div><span style="color:var(--muted)">Exit: </span>${t.exit_price || '—'}</div>
+            <div><span style="color:var(--muted)">Planned RR: </span>${t.planned_rr ? `1:${t.planned_rr}` : '—'}</div>
+            <div><span style="color:var(--muted)">Actual RR: </span>${t.actual_rr ? `1:${t.actual_rr}` : '—'}</div>
+          </div>
+          ${t.rules_broken?.length ? `<div style="font-size:var(--text-xs);color:var(--red);margin-bottom:var(--space-2);">Rules broken: ${t.rules_broken.join(', ')}</div>` : ''}
+          ${t.notes ? `<div style="font-size:var(--text-xs);color:var(--muted);margin-bottom:var(--space-2);">${t.notes}</div>` : ''}
+          ${t.screenshot ? `<a href="${t.screenshot}" target="_blank" style="font-size:var(--text-xs);color:var(--accent);">View chart →</a>` : ''}
+          <div style="display:flex;gap:var(--space-2);margin-top:var(--space-3);">
+            <button class="btn btn-danger btn-sm" onclick="deleteTradeEntry('${t.id}',event)">Delete</button>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
 }
 
-function editEntry(id) {
-  const entry = _entries.find(e => e.id === id);
-  if (entry) openJournalEntry(entry);
+function toggleTradeDetail(id) {
+  const el = document.getElementById('detail_' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
-async function deleteEntryConfirm(id) {
-  const ok = await confirmDialog('Delete this trade? This cannot be undone.');
+async function deleteTradeEntry(id, e) {
+  e.stopPropagation();
+  const ok = await confirmDialog('Delete this trade? Cannot be undone.');
   if (!ok) return;
   try {
-    await deleteJournalEntry(id);
-    toast('Trade deleted', 'info');
-    await loadJournal();
-  } catch (err) {
-    toast('Failed to delete: ' + err.message, 'error');
+    await deleteTrade(id);
+    _allTrades = _allTrades.filter(t => t.id !== id);
+    toast('Trade deleted', 'success');
+    updateStats(_allTrades);
+    renderTradeList(_allTrades);
+    renderAnalytics(_allTrades);
+  } catch(err) { toast('Error: ' + err.message, 'error'); }
+}
+
+function renderAnalytics(trades) {
+  if (trades.length < 2) {
+    document.getElementById('setupAnalytics').style.display = 'none';
+    return;
   }
+  document.getElementById('setupAnalytics').style.display = 'block';
+
+  // By setup
+  const bySetup = {};
+  trades.forEach(t => {
+    const s = t.setup_type || 'Other';
+    if (!bySetup[s]) bySetup[s] = { trades: 0, wins: 0, pnl: 0 };
+    bySetup[s].trades++;
+    if (t.result === 'Win') bySetup[s].wins++;
+    bySetup[s].pnl += t.pnl || 0;
+  });
+  const setupRows = Object.entries(bySetup).sort((a,b) => b[1].pnl - a[1].pnl);
+  document.getElementById('setupBreakdown').innerHTML = setupRows.map(([name, d]) => {
+    const wr = d.trades ? ((d.wins/d.trades)*100).toFixed(0) : 0;
+    const pnlColor = d.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const sign = d.pnl >= 0 ? '+' : '';
+    return `<div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;font-size:var(--text-sm);">${name}</div>
+      <div style="font-size:var(--text-xs);color:var(--muted);">${d.trades} trades · ${wr}% win</div>
+      <div style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:600;color:${pnlColor};">${sign}$${Math.abs(d.pnl).toFixed(0)}</div>
+    </div>`;
+  }).join('');
+
+  // By emotion
+  const byEmotion = {};
+  trades.forEach(t => {
+    const e2 = t.emotional_state || 'Calm';
+    if (!byEmotion[e2]) byEmotion[e2] = { trades: 0, wins: 0, pnl: 0 };
+    byEmotion[e2].trades++;
+    if (t.result === 'Win') byEmotion[e2].wins++;
+    byEmotion[e2].pnl += t.pnl || 0;
+  });
+  const emotionRows = Object.entries(byEmotion).sort((a,b) => b[1].pnl - a[1].pnl);
+  document.getElementById('emotionBreakdown').innerHTML = emotionRows.map(([name, d]) => {
+    const wr = d.trades ? ((d.wins/d.trades)*100).toFixed(0) : 0;
+    const pnlColor = d.pnl >= 0 ? 'var(--green)' : 'var(--red)';
+    const sign = d.pnl >= 0 ? '+' : '';
+    return `<div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--border);">
+      <div style="flex:1;font-size:var(--text-sm);">${name}</div>
+      <div style="font-size:var(--text-xs);color:var(--muted);">${d.trades} trades · ${wr}% win</div>
+      <div style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:600;color:${pnlColor};">${sign}$${Math.abs(d.pnl).toFixed(0)}</div>
+    </div>`;
+  }).join('');
 }
 </script>

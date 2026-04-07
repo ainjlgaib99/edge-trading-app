@@ -1,0 +1,286 @@
+<div class="page-inner">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Settings</h1>
+      <p class="page-sub">Configure your trading rules, session times, and integrations.</p>
+    </div>
+  </div>
+
+  <!-- Profile -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header">Profile</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-input" id="s_name" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email</label>
+        <input type="text" class="form-input" id="s_email" disabled style="opacity:0.5;">
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:var(--space-4);">
+      <label class="form-label">Strategy</label>
+      <input type="text" class="form-input" id="s_strategy" placeholder="e.g. FRVP + AMT">
+    </div>
+    <div class="form-group" style="margin-top:var(--space-4);">
+      <label class="form-label">Instruments</label>
+      <div style="display:flex;gap:var(--space-3);margin-top:var(--space-2);">
+        <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;"><input type="checkbox" id="s_mnq" style="accent-color:var(--accent)"> MNQ</label>
+        <label style="display:flex;align-items:center;gap:var(--space-2);cursor:pointer;"><input type="checkbox" id="s_mes" style="accent-color:var(--accent)"> MES</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk Rules -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header">Risk Rules</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+      <div class="form-group">
+        <label class="form-label">Max Risk Per Trade ($)</label>
+        <input type="number" class="form-input" id="s_risk" value="250">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Absolute Max Risk ($)</label>
+        <input type="number" class="form-input" id="s_maxrisk" value="500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Minimum R:R</label>
+        <input type="number" class="form-input" id="s_rr" value="2.0" step="0.5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max Trades Per Day</label>
+        <input type="number" class="form-input" id="s_trades" value="2">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max Losses Per Day</label>
+        <input type="number" class="form-input" id="s_losses" value="2">
+      </div>
+    </div>
+  </div>
+
+  <!-- Session Times -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header">Session Times</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+      <div class="form-group">
+        <label class="form-label">Session 1 Start</label>
+        <input type="text" class="form-input" id="s_s1start" placeholder="6:30 AM">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Session 1 End</label>
+        <input type="text" class="form-input" id="s_s1end" placeholder="8:00 AM">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Session 2 Start (optional)</label>
+        <input type="text" class="form-input" id="s_s2start" placeholder="3:00 PM">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Session 2 End (optional)</label>
+        <input type="text" class="form-input" id="s_s2end" placeholder="3:30 PM">
+      </div>
+    </div>
+  </div>
+
+  <!-- Prop Firm -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header">Prop Firm</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+      <div class="form-group">
+        <label class="form-label">Firm Name</label>
+        <select class="form-select" id="s_firm">
+          <option>Topstep</option><option>Apex</option><option>Lucid</option>
+          <option>FTMO</option><option>The Funded Trader</option><option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Eval Status</label>
+        <select class="form-select" id="s_evalstatus">
+          <option>Paper Trading</option>
+          <option>Evaluation</option>
+          <option>Verification</option>
+          <option>Funded</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account Size ($)</label>
+        <input type="number" class="form-input" id="s_acctsize" value="50000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Profit Target ($)</label>
+        <input type="number" class="form-input" id="s_target" value="3000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max Drawdown ($)</label>
+        <input type="number" class="form-input" id="s_maxdd" value="2500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Daily Loss Limit ($)</label>
+        <input type="number" class="form-input" id="s_dailyloss" value="2000">
+      </div>
+    </div>
+  </div>
+
+  <!-- Integrations -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleIntegrations()">
+      Integrations (Airtable, Slack, n8n)
+      <span id="intToggle">▸</span>
+    </div>
+    <div id="intSection" style="display:none;margin-top:var(--space-4);">
+      <div class="callout callout-warning" style="margin-bottom:var(--space-4);">All integrations are optional. The app works fully on Supabase alone.</div>
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">Airtable API Key</label>
+        <input type="password" class="form-input" id="s_at_key" placeholder="pat...">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Airtable Base ID</label>
+          <input type="text" class="form-input" id="s_at_base" placeholder="appXXXXXXXX">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Airtable Table Name</label>
+          <input type="text" class="form-input" id="s_at_table" placeholder="Trade Journal">
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">Slack Webhook URL</label>
+        <input type="url" class="form-input" id="s_slack" placeholder="https://hooks.slack.com/...">
+      </div>
+    </div>
+  </div>
+
+  <!-- Data Management -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header">Data Management</div>
+    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;">
+      <button class="btn btn-secondary btn-sm" onclick="exportTradesJSON()">Export JSON</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportTradesCSV()">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Save -->
+  <button class="btn btn-primary" id="saveSettingsBtn" onclick="saveSettings()" style="width:100%;height:48px;font-size:var(--text-base);font-weight:700;">
+    SAVE SETTINGS
+  </button>
+
+</div>
+
+<script>
+async function init_settings() {
+  const session = getAppSession();
+  if (!session) return;
+
+  const s = getTraderConfig() || {};
+  const profile = getAppProfile();
+
+  document.getElementById('s_email').value = session.user.email || '';
+  document.getElementById('s_name').value = s.name || profile?.username || '';
+  document.getElementById('s_strategy').value = s.strategy || 'FRVP + AMT';
+  document.getElementById('s_mnq').checked = (s.instruments || ['MNQ']).includes('MNQ');
+  document.getElementById('s_mes').checked = (s.instruments || ['MES']).includes('MES');
+  document.getElementById('s_risk').value = s.max_risk_per_trade || 250;
+  document.getElementById('s_maxrisk').value = s.absolute_max_risk || 500;
+  document.getElementById('s_rr').value = s.min_rr || 2.0;
+  document.getElementById('s_trades').value = s.max_trades_per_day || 2;
+  document.getElementById('s_losses').value = s.max_losses_per_day || 2;
+  document.getElementById('s_s1start').value = s.session_1_start || '6:30 AM';
+  document.getElementById('s_s1end').value = s.session_1_end || '8:00 AM';
+  document.getElementById('s_s2start').value = s.session_2_start || '';
+  document.getElementById('s_s2end').value = s.session_2_end || '';
+  document.getElementById('s_firm').value = s.prop_firm || 'Topstep';
+  document.getElementById('s_evalstatus').value = s.eval_status || 'Paper Trading';
+  document.getElementById('s_acctsize').value = s.account_size || 50000;
+  document.getElementById('s_target').value = s.profit_target || 3000;
+  document.getElementById('s_maxdd').value = s.max_drawdown || 2500;
+  document.getElementById('s_dailyloss').value = s.daily_loss_limit || 2000;
+  document.getElementById('s_at_key').value = s.airtable_api_key || '';
+  document.getElementById('s_at_base').value = s.airtable_base_id || '';
+  document.getElementById('s_at_table').value = s.airtable_table_id || '';
+  document.getElementById('s_slack').value = s.slack_webhook_url || '';
+}
+
+function toggleIntegrations() {
+  const s = document.getElementById('intSection');
+  const t = document.getElementById('intToggle');
+  const open = s.style.display !== 'none';
+  s.style.display = open ? 'none' : 'block';
+  t.textContent = open ? '▸' : '▾';
+}
+
+async function saveSettings() {
+  const session = getAppSession();
+  if (!session) return;
+  const btn = document.getElementById('saveSettingsBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  const instruments = [];
+  if (document.getElementById('s_mnq').checked) instruments.push('MNQ');
+  if (document.getElementById('s_mes').checked) instruments.push('MES');
+
+  const updates = {
+    name: document.getElementById('s_name').value,
+    strategy: document.getElementById('s_strategy').value,
+    instruments,
+    max_risk_per_trade: parseFloat(document.getElementById('s_risk').value),
+    absolute_max_risk: parseFloat(document.getElementById('s_maxrisk').value),
+    min_rr: parseFloat(document.getElementById('s_rr').value),
+    max_trades_per_day: parseInt(document.getElementById('s_trades').value),
+    max_losses_per_day: parseInt(document.getElementById('s_losses').value),
+    session_1_start: document.getElementById('s_s1start').value,
+    session_1_end: document.getElementById('s_s1end').value,
+    session_2_start: document.getElementById('s_s2start').value || null,
+    session_2_end: document.getElementById('s_s2end').value || null,
+    prop_firm: document.getElementById('s_firm').value,
+    eval_status: document.getElementById('s_evalstatus').value,
+    account_size: parseFloat(document.getElementById('s_acctsize').value),
+    profit_target: parseFloat(document.getElementById('s_target').value),
+    max_drawdown: parseFloat(document.getElementById('s_maxdd').value),
+    daily_loss_limit: parseFloat(document.getElementById('s_dailyloss').value),
+    airtable_api_key: document.getElementById('s_at_key').value || null,
+    airtable_base_id: document.getElementById('s_at_base').value || null,
+    airtable_table_id: document.getElementById('s_at_table').value || null,
+    slack_webhook_url: document.getElementById('s_slack').value || null,
+  };
+
+  try {
+    await saveTraderSettings(session.user.id, updates);
+    toast('Settings saved!', 'success');
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'SAVE SETTINGS';
+  }
+}
+
+async function exportTradesJSON() {
+  const session = getAppSession();
+  if (!session) return;
+  try {
+    const trades = await getTrades(session.user.id);
+    const blob = new Blob([JSON.stringify(trades, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `trades_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+  } catch(err) { toast('Export failed', 'error'); }
+}
+
+async function exportTradesCSV() {
+  const session = getAppSession();
+  if (!session) return;
+  try {
+    const trades = await getTrades(session.user.id);
+    if (!trades.length) { toast('No trades to export', 'warning'); return; }
+    const keys = Object.keys(trades[0]).filter(k => !['user_id','id'].includes(k));
+    const csv = [keys.join(','), ...trades.map(t => keys.map(k => JSON.stringify(t[k] ?? '')).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `trades_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  } catch(err) { toast('Export failed', 'error'); }
+}
+</script>

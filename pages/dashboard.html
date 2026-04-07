@@ -1,79 +1,78 @@
 <div class="page-inner">
 
-  <!-- Header -->
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-title" id="dashGreeting">Good morning</div>
-      <div class="page-subtitle" id="dashDate">Loading...</div>
-    </div>
-    <div class="page-actions">
-      <button class="btn btn-primary" onclick="openLogTradeModal()">
-        + Log Trade
-      </button>
-    </div>
+  <!-- SESSION OVER / MAX TRADES banners -->
+  <div id="sessionOverBanner" style="display:none; margin-bottom:var(--space-4); padding:var(--space-4) var(--space-6); background:rgba(255,51,86,0.12); border:2px solid var(--red); border-radius:var(--radius-lg); text-align:center;">
+    <div style="font-size:var(--text-xl);font-weight:800;color:var(--red);letter-spacing:0.02em;">🛑 SESSION OVER — WALK AWAY</div>
+    <div style="font-size:var(--text-sm);color:rgba(255,51,86,0.8);margin-top:4px;">You hit your max losses for today. Close the charts. Come back tomorrow.</div>
+  </div>
+  <div id="maxTradesBanner" style="display:none; margin-bottom:var(--space-4); padding:var(--space-3) var(--space-6); background:rgba(255,200,0,0.10); border:1px solid rgba(255,200,0,0.4); border-radius:var(--radius-lg); text-align:center;">
+    <div style="font-size:var(--text-base);font-weight:700;color:var(--yellow);">⚠️ MAX TRADES REACHED — Done for today.</div>
   </div>
 
-  <!-- Stat cards -->
-  <div class="stat-grid" id="statGrid">
-    <div class="stat-card">
+  <div class="page-header" style="margin-bottom:var(--space-6);">
+    <div>
+      <h1 class="page-title" id="dashGreeting">Good morning</h1>
+      <p class="page-sub" id="dashDate"></p>
+    </div>
+    <button class="btn btn-primary" onclick="navigate('log')" style="white-space:nowrap;">+ Log Trade</button>
+  </div>
+
+  <!-- Top 2 stat cards -->
+  <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin-bottom:var(--space-4);">
+    <div class="card stat-card">
+      <div class="stat-label">Today's P&L</div>
+      <div class="stat-value mono" id="dashTodayPnl">$0</div>
+      <div class="stat-sub" id="dashTodayTrades">0 trades today</div>
+    </div>
+    <div class="card stat-card">
       <div class="stat-label">Win Rate</div>
-      <div class="stat-value" id="statWinRate">—</div>
-      <div class="stat-change" id="statWinRateSub">all time</div>
+      <div class="stat-value" id="dashWinRate">—%</div>
+      <div class="stat-sub" id="dashTotalTrades">0 trades total</div>
     </div>
-    <div class="stat-card">
+  </div>
+
+  <!-- Second row: 3 stats -->
+  <div class="stat-grid" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:var(--space-4);">
+    <div class="card stat-card">
       <div class="stat-label">Avg R:R</div>
-      <div class="stat-value" id="statAvgRR">—</div>
-      <div class="stat-change" id="statAvgRRSub">achieved</div>
+      <div class="stat-value mono" id="dashAvgRR">—</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Month P&amp;L</div>
-      <div class="stat-value" id="statMonthPnl">—</div>
-      <div class="stat-change" id="statMonthSub">this month</div>
+    <div class="card stat-card">
+      <div class="stat-label">Streak</div>
+      <div class="stat-value mono" id="dashStreak">—</div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Today</div>
-      <div class="stat-value" id="statTodayTrades">—</div>
-      <div class="stat-change" id="statTodaySub">trades</div>
+    <div class="card stat-card">
+      <div class="stat-label">Best Setup</div>
+      <div class="stat-value" id="dashBestSetup" style="font-size:var(--text-base);">—</div>
     </div>
   </div>
 
-  <!-- Weekly chart + Recent trades -->
-  <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:var(--space-6);margin-bottom:var(--space-8);" class="dash-grid">
-
-    <!-- Weekly P&L chart -->
-    <div class="card">
-      <div class="card-title flex-between">
-        <span>Weekly P&amp;L</span>
-        <span class="text-muted text-mono" id="weekTotal" style="font-size:var(--text-xs)"></span>
-      </div>
-      <div class="chart-wrap" id="weekChart" style="height:160px;padding:var(--space-4) var(--space-4) 0;gap:var(--space-1);">
-        <div style="display:flex;align-items:center;justify-content:center;width:100%;color:var(--muted);font-size:var(--text-xs);">Loading chart...</div>
-      </div>
-      <div style="display:flex;justify-content:space-around;padding:var(--space-2) var(--space-4) 0;font-size:var(--text-xs);color:var(--muted);">
-        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span>
-      </div>
+  <!-- Risk Status -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header">Risk Status</div>
+    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;" id="riskPills">
+      <span class="badge badge-success" id="lossCountPill">0 / 2 losses</span>
+      <span class="badge badge-accent" id="tradeCountPill">0 / 2 trades</span>
     </div>
-
-    <!-- Rule chips -->
-    <div class="card">
-      <div class="card-title">Risk Rules</div>
-      <div id="dashRuleChips" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
-        <div class="loading-container" style="padding:var(--space-4);grid-column:1/-1;">
-          <div class="loading-spinner"></div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
-  <!-- Recent trades -->
+  <!-- Equity Curve -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <div class="card-header">Equity Curve</div>
+    <canvas id="equityChart" style="width:100%;height:160px;display:block;"></canvas>
+    <div id="equityEmpty" style="display:none;text-align:center;padding:var(--space-8);color:var(--muted);font-size:var(--text-sm);">
+      No trades yet. Log your first trade to see the curve.
+    </div>
+  </div>
+
+  <!-- Recent Trades -->
   <div class="card">
-    <div class="flex-between mb-4">
-      <div class="card-title" style="margin-bottom:0">Recent Trades</div>
-      <button class="btn btn-ghost btn-sm" onclick="navigate('journal')">View all →</button>
+    <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Recent Trades</span>
+      <button class="btn btn-ghost btn-sm" onclick="navigate('journal')">View All →</button>
     </div>
     <div id="recentTrades">
-      <div class="loading-container"><div class="loading-spinner"></div></div>
+      <div style="text-align:center;padding:var(--space-6);color:var(--muted);font-size:var(--text-sm);">Loading...</div>
     </div>
   </div>
 
@@ -84,245 +83,166 @@ async function init_dashboard() {
   const session = getAppSession();
   if (!session) return;
   const userId = session.user.id;
+  const settings = getTraderConfig();
 
-  // Greeting + date
-  document.getElementById('dashGreeting').textContent =
-    getGreeting() + ', ' + (getAppProfile()?.username || session.user.email?.split('@')[0] || 'Trader');
-  document.getElementById('dashDate').textContent =
-    new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
-
-  // Load stats + recent trades in parallel
-  const [stats, weekPnl, entries, tp] = await Promise.all([
-    getJournalStats(userId).catch(() => null),
-    getWeeklyPnl(userId).catch(() => []),
-    getJournalEntries(userId, { limit: 5 }).catch(() => []),
-    getTradingProfile(userId).catch(() => null)
-  ]);
-
-  // Stats
-  if (stats) {
-    const wr = document.getElementById('statWinRate');
-    const rr = document.getElementById('statAvgRR');
-    const mp = document.getElementById('statMonthPnl');
-    const td = document.getElementById('statTodayTrades');
-
-    wr.textContent = stats.total > 0 ? formatPct(stats.winRate) : '—';
-    wr.className   = 'stat-value ' + (stats.winRate >= 50 ? 'green' : stats.winRate > 0 ? '' : '');
-
-    rr.textContent = stats.avgRR > 0 ? formatRR(stats.avgRR) : '—';
-
-    mp.textContent = stats.monthPnl !== 0 ? formatCurrencyFull(stats.monthPnl) : '$0';
-    mp.className   = 'stat-value ' + (stats.monthPnl > 0 ? 'green' : stats.monthPnl < 0 ? 'red' : '');
-
-    td.textContent = stats.todayTrades || '0';
-    document.getElementById('statTodaySub').textContent =
-      stats.todayTrades >= (tp?.max_trades || 2) ? '⚠ limit reached' : 'trades';
-  }
-
-  // Weekly chart
-  if (weekPnl.length) {
-    const max = Math.max(...weekPnl.map(d => Math.abs(d.pnl)), 1);
-    const total = weekPnl.reduce((s,d) => s+d.pnl, 0);
-    const chartEl = document.getElementById('weekChart');
-    chartEl.innerHTML = weekPnl.map(d => {
-      const h = Math.max((Math.abs(d.pnl) / max) * 120, 4);
-      const cls = d.pnl > 0 ? 'pos' : d.pnl < 0 ? 'neg' : 'neutral';
-      return `<div class="chart-bar ${cls}" style="height:${h}px">
-        <div class="chart-tooltip">${d.label}: ${d.pnl > 0 ? '+' : ''}$${d.pnl.toFixed(0)}</div>
-      </div>`;
-    }).join('');
-    document.getElementById('weekTotal').textContent =
-      (total > 0 ? '+' : '') + '$' + total.toFixed(0) + ' this week';
-  }
-
-  // Rule chips
-  if (tp) {
-    document.getElementById('dashRuleChips').innerHTML = [
-      ['Risk / Trade', `$${tp.risk_per_trade}–${tp.max_risk}`],
-      ['Min RR',       '1 : 2'],
-      ['Max Trades',   `${tp.max_trades} / day`],
-      ['Stop After',   '2 losses'],
-      ['Session',      `${tp.session_start}–${tp.session_end}`],
-      ['Instruments',  tp.instruments || 'MNQ · MES'],
-    ].map(([l, v]) => `
-      <div class="chip" style="flex-direction:column;align-items:flex-start;gap:2px;border-radius:var(--radius-md);padding:var(--space-3);">
-        <span style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">${l}</span>
-        <span style="font-size:var(--text-sm);color:var(--text);font-weight:500">${v}</span>
-      </div>
-    `).join('');
-  } else {
-    document.getElementById('dashRuleChips').innerHTML = `
-      <div style="grid-column:1/-1;text-align:center;padding:var(--space-4)">
-        <p style="font-size:var(--text-sm);color:var(--muted);margin-bottom:var(--space-3)">No risk profile set yet.</p>
-        <button class="btn btn-secondary btn-sm" onclick="navigate('profile')">Set Up Profile →</button>
-      </div>`;
-  }
-
-  // Recent trades table
-  const tableEl = document.getElementById('recentTrades');
-  if (!entries.length) {
-    tableEl.innerHTML = `
-      <div class="empty-state" style="padding:var(--space-8)">
-        <div class="empty-icon">📋</div>
-        <div class="empty-title">No trades yet</div>
-        <div class="empty-msg">Log your first trade to start tracking your edge.</div>
-        <button class="btn btn-primary btn-sm" onclick="openLogTradeModal()">Log a Trade</button>
-      </div>`;
-    return;
-  }
-
-  tableEl.innerHTML = `
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Instrument</th>
-          <th>Setup</th>
-          <th class="text-right">P&amp;L</th>
-          <th class="text-right">R:R</th>
-          <th>Rules</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${entries.map(e => `
-          <tr onclick="navigate('journal')">
-            <td class="text-mono" style="font-size:var(--text-xs)">${formatDateShort(e.date)}</td>
-            <td>${e.instrument || '—'}</td>
-            <td style="color:var(--muted);font-size:var(--text-xs)">${e.setup_type || '—'}</td>
-            <td class="text-right ${pnlClass(e.pnl)}">${e.pnl != null ? (e.pnl >= 0 ? '+' : '') + '$' + Math.abs(e.pnl).toFixed(0) : '—'}</td>
-            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.actual_rr ? formatRR(e.actual_rr) : '—'}</td>
-            <td>
-              <span class="badge ${e.followed_rules ? 'badge-success' : 'badge-danger'}">
-                ${e.followed_rules ? '✓' : '✕'}
-              </span>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>`;
-}
-
-function openLogTradeModal() {
-  const today = new Date().toISOString().slice(0,10);
-  modal('Log Trade', `
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Date</label>
-        <input class="form-input" type="date" id="tj_date" value="${today}">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Instrument</label>
-        <select class="form-select" id="tj_instrument">
-          <option value="MNQ">MNQ</option>
-          <option value="MES">MES</option>
-          <option value="NQ">NQ</option>
-          <option value="ES">ES</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Setup Type</label>
-      <select class="form-select" id="tj_setup">
-        <option value="VAH Rejection">VAH Rejection (Short)</option>
-        <option value="VAL Bounce">VAL Bounce (Long)</option>
-        <option value="POC Retest">POC Retest</option>
-        <option value="Second Tap">Second Tap</option>
-        <option value="Other">Other</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Entry Price</label>
-        <input class="form-input" type="number" id="tj_entry" placeholder="19241.50" step="0.25">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Stop Price</label>
-        <input class="form-input" type="number" id="tj_stop" placeholder="19257.00" step="0.25">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Actual Exit</label>
-        <input class="form-input" type="number" id="tj_exit" placeholder="19214.00" step="0.25">
-      </div>
-      <div class="form-group">
-        <label class="form-label">P&amp;L ($)</label>
-        <input class="form-input" type="number" id="tj_pnl" placeholder="+274">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label class="form-label">Planned R:R</label>
-        <input class="form-input" type="number" id="tj_planned_rr" placeholder="2.4" step="0.1">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Emotion (1–10)</label>
-        <input class="form-input" type="number" id="tj_emotion" placeholder="8" min="1" max="10">
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Followed Rules?</label>
-      <select class="form-select" id="tj_rules">
-        <option value="true">Yes ✓</option>
-        <option value="false">No ✕</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Notes</label>
-      <textarea class="form-textarea" id="tj_notes" placeholder="Clean second tap at VAH, held for full target..."></textarea>
-    </div>
-  `, [
-    { label: 'Cancel', type: 'secondary', onClick: () => closeModal() },
-    { label: 'Save Trade', type: 'primary', onClick: saveQuickTrade }
-  ]);
-}
-
-async function saveQuickTrade() {
-  const session = getAppSession();
-  if (!session) return;
-
-  const entry = Number(document.getElementById('tj_entry').value);
-  const stop  = Number(document.getElementById('tj_stop').value);
-  const exit  = Number(document.getElementById('tj_exit').value);
-
-  let actualRR = null;
-  if (entry && stop && exit) {
-    const risk   = Math.abs(entry - stop);
-    const reward = Math.abs(exit - entry);
-    actualRR = risk > 0 ? reward / risk : null;
-  }
-
-  const data = {
-    user_id:         session.user.id,
-    date:            document.getElementById('tj_date').value,
-    instrument:      document.getElementById('tj_instrument').value,
-    setup_type:      document.getElementById('tj_setup').value,
-    entry_price:     entry || null,
-    stop_price:      stop  || null,
-    actual_exit:     exit  || null,
-    pnl:             Number(document.getElementById('tj_pnl').value) || null,
-    planned_rr:      Number(document.getElementById('tj_planned_rr').value) || null,
-    actual_rr:       actualRR,
-    followed_rules:  document.getElementById('tj_rules').value === 'true',
-    emotional_state: Number(document.getElementById('tj_emotion').value) || null,
-    notes:           document.getElementById('tj_notes').value.trim() || null,
-  };
+  // Date + greeting
+  const now = new Date();
+  const h = now.getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('dashGreeting').textContent = greet;
+  document.getElementById('dashDate').textContent = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
 
   try {
-    await createJournalEntry(data);
-    closeModal();
-    toast('Trade logged ✓', 'success');
-    // Reload dashboard
-    delete window._pageCache?.dashboard;
-    await init_dashboard();
-  } catch (err) {
-    toast('Failed to save: ' + err.message, 'error');
+    const [stats, curve, recent] = await Promise.all([
+      getTradeStats(userId),
+      getEquityCurve(userId),
+      getTrades(userId, { limit: 5 })
+    ]);
+
+    const maxLosses = settings?.max_losses_per_day || 2;
+    const maxTrades = settings?.max_trades_per_day || 2;
+
+    // Banners
+    if (stats.todayLosses >= maxLosses && stats.todayLosses > 0) {
+      document.getElementById('sessionOverBanner').style.display = 'block';
+    } else if (stats.todayTrades >= maxTrades && stats.todayTrades > 0) {
+      document.getElementById('maxTradesBanner').style.display = 'block';
+    }
+
+    // Today P&L
+    const pnlEl = document.getElementById('dashTodayPnl');
+    const pnl = stats.todayPnl;
+    pnlEl.textContent = (pnl >= 0 ? '+' : '') + '$' + Math.abs(pnl).toFixed(0);
+    pnlEl.style.color = pnl > 0 ? 'var(--green)' : pnl < 0 ? 'var(--red)' : 'var(--text)';
+    document.getElementById('dashTodayTrades').textContent = `${stats.todayTrades} trade${stats.todayTrades !== 1 ? 's' : ''} today`;
+
+    // Win rate
+    const wr = stats.winRate.toFixed(0);
+    const wrEl = document.getElementById('dashWinRate');
+    wrEl.textContent = `${wr}%`;
+    wrEl.style.color = wr >= 60 ? 'var(--green)' : wr >= 40 ? 'var(--text)' : 'var(--red)';
+    document.getElementById('dashTotalTrades').textContent = `${stats.total} trades total`;
+
+    // Row 2
+    document.getElementById('dashAvgRR').textContent = stats.avgRR > 0 ? `${stats.avgRR.toFixed(2)}R` : '—';
+    const streakEl = document.getElementById('dashStreak');
+    streakEl.textContent = stats.streak > 0 ? `+${stats.streak}` : stats.streak < 0 ? `${stats.streak}` : '0';
+    streakEl.style.color = stats.streak > 0 ? 'var(--green)' : stats.streak < 0 ? 'var(--red)' : 'var(--text)';
+    document.getElementById('dashBestSetup').textContent = stats.bestSetup;
+
+    // Risk pills
+    const lp = document.getElementById('lossCountPill');
+    lp.textContent = `${stats.todayLosses} / ${maxLosses} losses today`;
+    lp.className = `badge badge-${stats.todayLosses >= maxLosses ? 'danger' : 'success'}`;
+    const tp2 = document.getElementById('tradeCountPill');
+    tp2.textContent = `${stats.todayTrades} / ${maxTrades} trades today`;
+    tp2.className = `badge badge-${stats.todayTrades >= maxTrades ? 'warning' : 'accent'}`;
+
+    drawEquityCurve(curve);
+    renderRecentTrades(recent);
+  } catch(err) {
+    console.error('Dashboard error:', err);
   }
 }
-</script>
 
-<style>
-@media (max-width: 768px) {
-  .dash-grid { grid-template-columns: 1fr !important; }
+function drawEquityCurve(data) {
+  const canvas = document.getElementById('equityChart');
+  const emptyEl = document.getElementById('equityEmpty');
+  if (!data || data.length === 0) {
+    canvas.style.display = 'none';
+    emptyEl.style.display = 'block';
+    return;
+  }
+  canvas.style.display = 'block';
+  emptyEl.style.display = 'none';
+
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = 160 * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = '160px';
+
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = 160;
+  const values = data.map(d => d.cumPnl);
+  const min = Math.min(0, ...values), max = Math.max(0, ...values);
+  const range = max - min || 1;
+  const pad = { l: 48, r: 16, t: 16, b: 24 };
+
+  const toX = i => pad.l + (i / Math.max(data.length - 1, 1)) * (W - pad.l - pad.r);
+  const toY = v => pad.t + ((max - v) / range) * (H - pad.t - pad.b);
+
+  const final = values[values.length - 1];
+  const lineColor = final >= 0 ? '#00e87a' : '#ff3356';
+
+  // Zero line
+  ctx.beginPath();
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4,4]);
+  ctx.moveTo(pad.l, toY(0));
+  ctx.lineTo(W - pad.r, toY(0));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Gradient fill
+  ctx.beginPath();
+  ctx.moveTo(toX(0), toY(values[0]));
+  for (let i = 1; i < data.length; i++) ctx.lineTo(toX(i), toY(values[i]));
+  ctx.lineTo(toX(data.length - 1), H - pad.b);
+  ctx.lineTo(toX(0), H - pad.b);
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, final >= 0 ? 'rgba(0,232,122,0.2)' : 'rgba(255,51,86,0.2)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.moveTo(toX(0), toY(values[0]));
+  for (let i = 1; i < data.length; i++) ctx.lineTo(toX(i), toY(values[i]));
+  ctx.stroke();
+
+  // Dot at last point
+  const lx = toX(data.length - 1), ly = toY(final);
+  ctx.beginPath();
+  ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+  ctx.fillStyle = lineColor;
+  ctx.fill();
+
+  // Label
+  ctx.fillStyle = 'rgba(221,221,240,0.5)';
+  ctx.font = `10px 'DM Mono', monospace`;
+  ctx.textAlign = 'right';
+  ctx.fillText(`${final >= 0 ? '+' : ''}$${Math.round(final)}`, pad.l - 4, ly + 4);
 }
-</style>
+
+function renderRecentTrades(trades) {
+  const el = document.getElementById('recentTrades');
+  if (!trades.length) {
+    el.innerHTML = `<div style="text-align:center;padding:var(--space-6);color:var(--muted);font-size:var(--text-sm);">No trades yet. <button class="btn btn-primary btn-sm" onclick="navigate('log')">Log first trade</button></div>`;
+    return;
+  }
+  el.innerHTML = trades.map(t => {
+    const isWin = t.result === 'Win', isLoss = t.result === 'Loss';
+    const color = isWin ? 'var(--green)' : isLoss ? 'var(--red)' : 'var(--muted)';
+    const dir = t.direction === 'Long' ? '▲' : '▼';
+    const dirColor = t.direction === 'Long' ? 'var(--green)' : 'var(--red)';
+    const sign = (t.pnl || 0) >= 0 ? '+' : '';
+    return `<div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3) 0;border-bottom:1px solid var(--border);">
+      <span style="color:${dirColor};font-size:var(--text-base);width:16px;text-align:center;flex-shrink:0;">${dir}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:var(--text-sm);font-weight:500;">${t.setup_type}</div>
+        <div style="font-size:var(--text-xs);color:var(--muted);">${t.instrument} · ${t.date}</div>
+      </div>
+      <span style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:600;color:${color};flex-shrink:0;">${sign}$${Math.abs(t.pnl||0)}</span>
+    </div>`;
+  }).join('');
+}
+</script>

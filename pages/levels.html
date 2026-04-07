@@ -1,0 +1,244 @@
+<div class="page-inner">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Daily Levels</h1>
+      <p class="page-sub" id="levelsDate">Log your FRVP levels before the session opens.</p>
+    </div>
+  </div>
+
+  <!-- News Day Banner -->
+  <div id="newsDayBanner" style="display:none; margin-bottom:var(--space-4); padding:var(--space-4) var(--space-6); background:rgba(255,51,86,0.12); border:2px solid var(--red); border-radius:var(--radius-lg); text-align:center;">
+    <div style="font-size:var(--text-xl);font-weight:800;color:var(--red);">🔴 NEWS DAY — NO TRADING</div>
+    <div style="font-size:var(--text-sm);color:rgba(255,51,86,0.8);margin-top:4px;">Close the charts. Come back tomorrow. You don't fight the news.</div>
+  </div>
+
+  <form id="levelsForm" onsubmit="saveLevels(event)">
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <div class="card-header">Today's FRVP Levels</div>
+
+      <!-- VAH / POC / VAL -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-4);">
+        <div class="form-group">
+          <label class="form-label" style="color:var(--green);">VAH</label>
+          <input type="number" class="form-input" id="f_vah" step="0.25" placeholder="19265.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:var(--accent);">POC</label>
+          <input type="number" class="form-input" id="f_poc" step="0.25" placeholder="19250.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:var(--red);">VAL</label>
+          <input type="number" class="form-input" id="f_val" step="0.25" placeholder="19235.00">
+        </div>
+      </div>
+
+      <!-- Prev Day High / Low -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);margin-bottom:var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Prev Day High</label>
+          <input type="number" class="form-input" id="f_pdh" step="0.25" placeholder="19288.00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prev Day Low</label>
+          <input type="number" class="form-input" id="f_pdl" step="0.25" placeholder="19218.00">
+        </div>
+      </div>
+
+      <!-- Bias -->
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">Session Bias</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-2);margin-top:var(--space-2);">
+          <button type="button" class="btn btn-secondary bias-btn" id="biasLong" onclick="setBias('Long')">▲ Long</button>
+          <button type="button" class="btn btn-secondary bias-btn active" id="biasNeutral" onclick="setBias('Neutral')">= Neutral</button>
+          <button type="button" class="btn btn-secondary bias-btn" id="biasShort" onclick="setBias('Short')">▼ Short</button>
+        </div>
+      </div>
+
+      <!-- Bias Notes -->
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">Why this bias? (optional)</label>
+        <textarea class="form-textarea" id="f_bias_notes" rows="2" placeholder="e.g. Price rejected VAH on close, bias bearish to POC..."></textarea>
+      </div>
+
+      <!-- News Events -->
+      <div class="form-group" style="margin-bottom:var(--space-4);">
+        <label class="form-label">News Events Today?</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-2);margin-top:var(--space-2);">
+          <button type="button" class="btn btn-secondary news-btn active" id="newsNo" onclick="setNews(false)">✓ Clear to trade</button>
+          <button type="button" class="btn btn-secondary news-btn" id="newsYes" onclick="setNews(true)">🔴 News day — sit out</button>
+        </div>
+      </div>
+      <div id="newsDetailsSection" style="display:none;margin-bottom:var(--space-4);">
+        <div class="form-group">
+          <label class="form-label">Which event?</label>
+          <select class="form-select" id="f_news_details">
+            <option value="CPI">CPI</option>
+            <option value="FOMC">FOMC</option>
+            <option value="NFP">NFP (Non-Farm Payrolls)</option>
+            <option value="PPI">PPI</option>
+            <option value="JOLTS">JOLTS</option>
+            <option value="Fed Speak">Fed Speak</option>
+            <option value="GDP">GDP</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Weekly Levels (collapsible) -->
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <div class="card-header" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleWeekly()">
+        Weekly Levels (optional)
+        <span id="weeklyToggle">▸</span>
+      </div>
+      <div id="weeklySection" style="display:none;margin-top:var(--space-4);">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-4);">
+          <div class="form-group">
+            <label class="form-label" style="color:var(--green);">Weekly VAH</label>
+            <input type="number" class="form-input" id="f_wvah" step="0.25">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color:var(--accent);">Weekly POC</label>
+            <input type="number" class="form-input" id="f_wpoc" step="0.25">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="color:var(--red);">Weekly VAL</label>
+            <input type="number" class="form-input" id="f_wval" step="0.25">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;height:48px;font-size:var(--text-base);font-weight:700;">
+      SAVE LEVELS
+    </button>
+  </form>
+
+  <!-- Level History -->
+  <div class="card" style="margin-top:var(--space-6);">
+    <div class="card-header">Recent Level History</div>
+    <div id="levelHistory" style="overflow-x:auto;">
+      <div style="text-align:center;padding:var(--space-6);color:var(--muted);font-size:var(--text-sm);">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<style>
+.bias-btn.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+.news-btn.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:700; }
+</style>
+
+<script>
+let _levelsBias = 'Neutral';
+let _levelsNewsDay = false;
+
+async function init_levels() {
+  const now = new Date();
+  document.getElementById('levelsDate').textContent = now.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+  const session = getAppSession();
+  if (!session) return;
+
+  try {
+    const [today, history] = await Promise.all([
+      getTodayLevels(session.user.id),
+      getRecentLevels(session.user.id, 6)
+    ]);
+
+    if (today) {
+      // Pre-fill form with today's saved levels
+      if (today.vah) document.getElementById('f_vah').value = today.vah;
+      if (today.poc) document.getElementById('f_poc').value = today.poc;
+      if (today.val) document.getElementById('f_val').value = today.val;
+      if (today.prev_day_high) document.getElementById('f_pdh').value = today.prev_day_high;
+      if (today.prev_day_low) document.getElementById('f_pdl').value = today.prev_day_low;
+      if (today.bias_notes) document.getElementById('f_bias_notes').value = today.bias_notes;
+      if (today.weekly_vah) document.getElementById('f_wvah').value = today.weekly_vah;
+      if (today.weekly_poc) document.getElementById('f_wpoc').value = today.weekly_poc;
+      if (today.weekly_val) document.getElementById('f_wval').value = today.weekly_val;
+      if (today.bias) setBias(today.bias);
+      if (today.news_events) setNews(true);
+      if (today.news_details) document.getElementById('f_news_details').value = today.news_details;
+    }
+
+    renderLevelHistory(history.filter(l => l.date !== new Date().toISOString().slice(0,10)));
+  } catch(e) { console.error(e); }
+}
+
+function setBias(bias) {
+  _levelsBias = bias;
+  ['Long','Neutral','Short'].forEach(b => {
+    document.getElementById('bias' + b).classList.toggle('active', b === bias);
+  });
+}
+
+function setNews(hasNews) {
+  _levelsNewsDay = hasNews;
+  document.getElementById('newsNo').classList.toggle('active', !hasNews);
+  document.getElementById('newsYes').classList.toggle('active', hasNews);
+  document.getElementById('newsDetailsSection').style.display = hasNews ? 'block' : 'none';
+  document.getElementById('newsDayBanner').style.display = hasNews ? 'block' : 'none';
+}
+
+function toggleWeekly() {
+  const s = document.getElementById('weeklySection');
+  const t = document.getElementById('weeklyToggle');
+  const open = s.style.display !== 'none';
+  s.style.display = open ? 'none' : 'block';
+  t.textContent = open ? '▸' : '▾';
+}
+
+async function saveLevels(e) {
+  e.preventDefault();
+  const session = getAppSession();
+  if (!session) return;
+
+  const btn = e.target.querySelector('[type=submit]');
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    await saveDailyLevels(session.user.id, {
+      vah: parseFloat(document.getElementById('f_vah').value) || null,
+      poc: parseFloat(document.getElementById('f_poc').value) || null,
+      val: parseFloat(document.getElementById('f_val').value) || null,
+      prev_day_high: parseFloat(document.getElementById('f_pdh').value) || null,
+      prev_day_low: parseFloat(document.getElementById('f_pdl').value) || null,
+      weekly_vah: parseFloat(document.getElementById('f_wvah').value) || null,
+      weekly_poc: parseFloat(document.getElementById('f_wpoc').value) || null,
+      weekly_val: parseFloat(document.getElementById('f_wval').value) || null,
+      bias: _levelsBias,
+      bias_notes: document.getElementById('f_bias_notes').value || null,
+      news_events: _levelsNewsDay,
+      news_details: _levelsNewsDay ? document.getElementById('f_news_details').value : null,
+    });
+    toast('Levels saved!', 'success');
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'SAVE LEVELS';
+  }
+}
+
+function renderLevelHistory(levels) {
+  const el = document.getElementById('levelHistory');
+  if (!levels.length) {
+    el.innerHTML = `<div style="text-align:center;padding:var(--space-6);color:var(--muted);font-size:var(--text-sm);">No level history yet.</div>`;
+    return;
+  }
+  el.innerHTML = `<table class="data-table" style="width:100%;font-size:var(--text-sm);">
+    <thead><tr>
+      <th>Date</th><th style="color:var(--green)">VAH</th><th style="color:var(--accent)">POC</th><th style="color:var(--red)">VAL</th><th>Bias</th>
+    </tr></thead>
+    <tbody>${levels.map(l => `<tr>
+      <td style="color:var(--muted)">${l.date}</td>
+      <td>${l.vah || '—'}</td>
+      <td>${l.poc || '—'}</td>
+      <td>${l.val || '—'}</td>
+      <td><span class="badge badge-${l.bias==='Long'?'success':l.bias==='Short'?'danger':'muted'}">${l.bias || 'Neutral'}</span></td>
+    </tr>`).join('')}</tbody>
+  </table>`;
+}
+</script>

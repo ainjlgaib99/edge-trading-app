@@ -1,0 +1,357 @@
+<div class="page-inner">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Eval Tracker</h1>
+      <p class="page-sub">Track your prop firm evaluation progress.</p>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openAddAccount()">+ Add Account</button>
+  </div>
+
+  <!-- Account selector (shown when multiple) -->
+  <div id="accountSelector" style="display:none; margin-bottom:var(--space-4);">
+    <select class="form-select" id="accountSelect" onchange="switchAccount(this.value)"></select>
+  </div>
+
+  <!-- No accounts state -->
+  <div id="evalEmpty" style="display:none;">
+    <div class="empty-state">
+      <div class="empty-icon">📈</div>
+      <div class="empty-title">No accounts yet</div>
+      <div class="empty-msg">Add your first prop firm evaluation account to start tracking progress.</div>
+      <button class="btn btn-primary" onclick="openAddAccount()">Add Account</button>
+    </div>
+  </div>
+
+  <!-- Account detail -->
+  <div id="evalDetail" style="display:none;">
+
+    <!-- Header Card -->
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-3);">
+        <div>
+          <div style="font-size:var(--text-xl);font-weight:700;" id="evalAccountName">—</div>
+          <div style="font-size:var(--text-sm);color:var(--muted);" id="evalAccountSize">—</div>
+        </div>
+        <span class="badge" id="evalStatusBadge">Active</span>
+      </div>
+      <div style="font-size:var(--text-2xl);font-weight:800;font-family:var(--font-mono);" id="evalTotalPnl">+$0</div>
+      <div style="font-size:var(--text-sm);color:var(--muted);margin-top:4px;">Total P&L since start date</div>
+    </div>
+
+    <!-- Profit Target Progress -->
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <div style="font-size:var(--text-sm);font-weight:600;">Profit Target</div>
+        <div style="font-size:var(--text-sm);color:var(--muted);" id="evalProfitLabel">$0 / $3,000</div>
+      </div>
+      <div style="background:var(--card);border-radius:20px;height:8px;overflow:hidden;">
+        <div id="evalProfitBar" style="height:100%;background:var(--green);border-radius:20px;width:0%;transition:width 0.6s ease;"></div>
+      </div>
+    </div>
+
+    <!-- Drawdown -->
+    <div class="card" style="margin-bottom:var(--space-4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <div style="font-size:var(--text-sm);font-weight:600;">Drawdown Used</div>
+        <div style="font-size:var(--text-sm);color:var(--muted);" id="evalDrawdownLabel">$0 / $2,500</div>
+      </div>
+      <div style="background:var(--card);border-radius:20px;height:8px;overflow:hidden;">
+        <div id="evalDrawdownBar" style="height:100%;background:var(--red);border-radius:20px;width:0%;transition:width 0.6s ease;"></div>
+      </div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stat-grid" style="grid-template-columns:1fr 1fr;margin-bottom:var(--space-4);">
+      <div class="card stat-card">
+        <div class="stat-label">Trading Days</div>
+        <div class="stat-value mono" id="evalTradingDays">0</div>
+        <div class="stat-sub" id="evalMinDays">15 required</div>
+      </div>
+      <div class="card stat-card">
+        <div class="stat-label">Daily Limit</div>
+        <div class="stat-value mono" id="evalDailyLimit">$2,000</div>
+        <div class="stat-sub" id="evalTodayPnl">Today: +$0</div>
+      </div>
+    </div>
+
+    <!-- Edit Account (expandable) -->
+    <div class="card">
+      <div class="card-header" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleEditAccount()">
+        Account Settings
+        <span id="editToggle">▸</span>
+      </div>
+      <div id="editAccountSection" style="display:none;margin-top:var(--space-4);">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);">
+          <div class="form-group">
+            <label class="form-label">Account Name</label>
+            <input type="text" class="form-input" id="ea_name">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prop Firm</label>
+            <select class="form-select" id="ea_firm">
+              <option>Topstep</option>
+              <option>Apex</option>
+              <option>Lucid</option>
+              <option>FTMO</option>
+              <option>The Funded Trader</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Size ($)</label>
+            <input type="number" class="form-input" id="ea_size" step="1000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phase</label>
+            <select class="form-select" id="ea_type">
+              <option value="Evaluation">Evaluation</option>
+              <option value="Verification">Verification</option>
+              <option value="Funded">Funded</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Profit Target ($)</label>
+            <input type="number" class="form-input" id="ea_target">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Drawdown ($)</label>
+            <input type="number" class="form-input" id="ea_drawdown">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Daily Loss Limit ($)</label>
+            <input type="number" class="form-input" id="ea_daily">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Min Trading Days</label>
+            <input type="number" class="form-input" id="ea_mindays">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-input" id="ea_start">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="ea_status">
+              <option value="Active">Active</option>
+              <option value="Passed">Passed</option>
+              <option value="Failed">Failed</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4);">
+          <button class="btn btn-primary" onclick="saveAccount()">Save Account</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCurrentAccount()">Delete Account</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- Add Account Modal content defined inline, opened via openAddAccount() -->
+
+<script>
+let _evalAccounts = [];
+let _evalCurrentId = null;
+let _evalTodayPnl = 0;
+
+async function init_eval() {
+  const session = getAppSession();
+  if (!session) return;
+
+  try {
+    const [accounts, todayTrades] = await Promise.all([
+      getPropFirmAccounts(session.user.id),
+      getTodayTrades(session.user.id)
+    ]);
+    _evalAccounts = accounts;
+    _evalTodayPnl = todayTrades.reduce((s, t) => s + (t.pnl || 0), 0);
+
+    if (!accounts.length) {
+      document.getElementById('evalEmpty').style.display = 'block';
+      document.getElementById('evalDetail').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('evalEmpty').style.display = 'none';
+    document.getElementById('evalDetail').style.display = 'block';
+
+    if (accounts.length > 1) {
+      const sel = document.getElementById('accountSelect');
+      sel.innerHTML = accounts.map(a => `<option value="${a.id}">${a.account_name} — ${a.prop_firm}</option>`).join('');
+      document.getElementById('accountSelector').style.display = 'block';
+    }
+
+    await renderAccount(accounts[0], session.user.id);
+  } catch(e) { console.error(e); }
+}
+
+async function renderAccount(account, userId) {
+  _evalCurrentId = account.id;
+
+  // Header
+  document.getElementById('evalAccountName').textContent = account.account_name;
+  document.getElementById('evalAccountSize').textContent = `${account.prop_firm} · $${Number(account.account_size).toLocaleString()} ${account.account_type}`;
+  const sb = document.getElementById('evalStatusBadge');
+  sb.textContent = account.status;
+  sb.className = `badge badge-${account.status === 'Active' ? 'success' : account.status === 'Passed' ? 'accent' : 'danger'}`;
+
+  // Get trades since start date
+  let tradePnl = 0, tradingDays = new Set(), maxDrawdown = 0;
+  if (userId) {
+    try {
+      const trades = await getTrades(userId, { startDate: account.start_date });
+      tradePnl = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+      trades.forEach(t => tradingDays.add(t.date));
+
+      // Calculate max drawdown from equity curve
+      let peak = 0, cum = 0;
+      trades.forEach(t => {
+        cum += t.pnl || 0;
+        if (cum > peak) peak = cum;
+        const dd = peak - cum;
+        if (dd > maxDrawdown) maxDrawdown = dd;
+      });
+    } catch(e) {}
+  }
+
+  // P&L
+  const pnlEl = document.getElementById('evalTotalPnl');
+  pnlEl.textContent = `${tradePnl >= 0 ? '+' : ''}$${Math.abs(tradePnl).toFixed(0)}`;
+  pnlEl.style.color = tradePnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Profit bar
+  const pTarget = account.profit_target || 3000;
+  const profitPct = Math.min(100, Math.max(0, (tradePnl / pTarget) * 100));
+  document.getElementById('evalProfitLabel').textContent = `$${tradePnl.toFixed(0)} / $${pTarget.toLocaleString()}`;
+  document.getElementById('evalProfitBar').style.width = profitPct + '%';
+
+  // Drawdown bar
+  const dMax = account.max_drawdown_allowed || 2500;
+  const ddPct = Math.min(100, (maxDrawdown / dMax) * 100);
+  const ddBar = document.getElementById('evalDrawdownBar');
+  ddBar.style.width = ddPct + '%';
+  ddBar.style.background = ddPct > 70 ? '#cc0000' : ddPct > 50 ? 'var(--red)' : '#ef4444';
+  document.getElementById('evalDrawdownLabel').textContent = `$${maxDrawdown.toFixed(0)} / $${dMax.toLocaleString()}`;
+
+  // Stats
+  const daysCount = tradingDays.size;
+  const minDays = account.min_trading_days || 15;
+  document.getElementById('evalTradingDays').textContent = `${daysCount} / ${minDays}`;
+  document.getElementById('evalMinDays').textContent = daysCount >= minDays ? '✓ Requirement met' : `${minDays - daysCount} more needed`;
+
+  const dLimit = account.daily_loss_limit || 2000;
+  document.getElementById('evalDailyLimit').textContent = `$${dLimit.toLocaleString()}`;
+  const todayEl = document.getElementById('evalTodayPnl');
+  todayEl.textContent = `Today: ${_evalTodayPnl >= 0 ? '+' : ''}$${Math.abs(_evalTodayPnl).toFixed(0)}`;
+  todayEl.style.color = _evalTodayPnl >= 0 ? 'var(--green)' : 'var(--red)';
+
+  // Pre-fill edit form
+  document.getElementById('ea_name').value = account.account_name;
+  document.getElementById('ea_firm').value = account.prop_firm;
+  document.getElementById('ea_size').value = account.account_size;
+  document.getElementById('ea_type').value = account.account_type;
+  document.getElementById('ea_target').value = account.profit_target;
+  document.getElementById('ea_drawdown').value = account.max_drawdown_allowed;
+  document.getElementById('ea_daily').value = account.daily_loss_limit;
+  document.getElementById('ea_mindays').value = account.min_trading_days;
+  document.getElementById('ea_start').value = account.start_date || new Date().toISOString().slice(0,10);
+  document.getElementById('ea_status').value = account.status;
+}
+
+function switchAccount(id) {
+  const account = _evalAccounts.find(a => a.id === id);
+  if (account) renderAccount(account, getAppSession()?.user?.id);
+}
+
+function toggleEditAccount() {
+  const s = document.getElementById('editAccountSection');
+  const t = document.getElementById('editToggle');
+  const open = s.style.display !== 'none';
+  s.style.display = open ? 'none' : 'block';
+  t.textContent = open ? '▸' : '▾';
+}
+
+function openAddAccount() {
+  modal('Add Prop Firm Account', `
+    <div style="display:flex;flex-direction:column;gap:var(--space-4);">
+      <div class="form-group"><label class="form-label">Account Name</label><input class="form-input" id="newAcctName" placeholder="Topstep $50K Challenge"></div>
+      <div class="form-group"><label class="form-label">Prop Firm</label>
+        <select class="form-select" id="newAcctFirm"><option>Topstep</option><option>Apex</option><option>Lucid</option><option>FTMO</option><option>Other</option></select>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <div class="form-group"><label class="form-label">Account Size ($)</label><input class="form-input" id="newAcctSize" type="number" value="50000"></div>
+        <div class="form-group"><label class="form-label">Profit Target ($)</label><input class="form-input" id="newAcctTarget" type="number" value="3000"></div>
+        <div class="form-group"><label class="form-label">Max Drawdown ($)</label><input class="form-input" id="newAcctDD" type="number" value="2500"></div>
+        <div class="form-group"><label class="form-label">Daily Loss Limit ($)</label><input class="form-input" id="newAcctDaily" type="number" value="2000"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Start Date</label><input class="form-input" id="newAcctStart" type="date" value="${new Date().toISOString().slice(0,10)}"></div>
+    </div>
+  `, [
+    { label: 'Cancel', action: closeModal, cls: 'btn-secondary' },
+    { label: 'Create Account', action: createAccount, cls: 'btn-primary' }
+  ]);
+}
+
+async function createAccount() {
+  const session = getAppSession();
+  if (!session) return;
+  try {
+    const account = await savePropFirmAccount(session.user.id, {
+      account_name: document.getElementById('newAcctName').value,
+      prop_firm: document.getElementById('newAcctFirm').value,
+      account_size: parseFloat(document.getElementById('newAcctSize').value),
+      account_type: 'Evaluation',
+      status: 'Active',
+      profit_target: parseFloat(document.getElementById('newAcctTarget').value),
+      max_drawdown_allowed: parseFloat(document.getElementById('newAcctDD').value),
+      daily_loss_limit: parseFloat(document.getElementById('newAcctDaily').value),
+      min_trading_days: 15,
+      start_date: document.getElementById('newAcctStart').value,
+    });
+    closeModal();
+    toast('Account created!', 'success');
+    await init_eval();
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  }
+}
+
+async function saveAccount() {
+  const session = getAppSession();
+  const account = _evalAccounts.find(a => a.id === _evalCurrentId);
+  if (!account) return;
+  try {
+    await savePropFirmAccount(session.user.id, {
+      ...account,
+      account_name: document.getElementById('ea_name').value,
+      prop_firm: document.getElementById('ea_firm').value,
+      account_size: parseFloat(document.getElementById('ea_size').value),
+      account_type: document.getElementById('ea_type').value,
+      profit_target: parseFloat(document.getElementById('ea_target').value),
+      max_drawdown_allowed: parseFloat(document.getElementById('ea_drawdown').value),
+      daily_loss_limit: parseFloat(document.getElementById('ea_daily').value),
+      min_trading_days: parseInt(document.getElementById('ea_mindays').value),
+      start_date: document.getElementById('ea_start').value,
+      status: document.getElementById('ea_status').value,
+    });
+    toast('Account saved!', 'success');
+    await init_eval();
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  }
+}
+
+async function deleteCurrentAccount() {
+  const ok = await confirmDialog('Delete this account? This cannot be undone.');
+  if (!ok) return;
+  try {
+    await deletePropFirmAccount(_evalCurrentId);
+    toast('Account deleted', 'success');
+    await init_eval();
+  } catch(err) {
+    toast('Error: ' + err.message, 'error');
+  }
+}
+</script>

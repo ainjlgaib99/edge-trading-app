@@ -287,6 +287,225 @@ async function saveUserSettings(userId, settings) {
   if (error) throw error;
 }
 
+/* ══════════════════════════════
+   TRADER SETTINGS
+══════════════════════════════ */
+
+const DEFAULT_TRADER_SETTINGS = {
+  name: '',
+  instruments: ['MNQ', 'MES'],
+  strategy: 'FRVP + AMT',
+  max_risk_per_trade: 250,
+  absolute_max_risk: 500,
+  min_rr: 2.0,
+  max_trades_per_day: 2,
+  max_losses_per_day: 2,
+  prop_firm: 'Topstep',
+  account_size: 50000,
+  profit_target: 3000,
+  max_drawdown: 2500,
+  daily_loss_limit: 2000,
+  min_trading_days: 15,
+  session_1_start: '6:30 AM',
+  session_1_end: '8:00 AM',
+  session_2_start: null,
+  session_2_end: null,
+  eval_status: 'Paper Trading',
+  airtable_api_key: null,
+  airtable_base_id: null,
+  airtable_table_id: null,
+  slack_webhook_url: null,
+};
+
+async function getTraderSettings(userId) {
+  const { data, error } = await _sb
+    .from('trader_settings').select('*').eq('user_id', userId).single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data || null;
+}
+
+async function saveTraderSettings(userId, updates) {
+  const { data, error } = await _sb
+    .from('trader_settings')
+    .upsert({ user_id: userId, ...updates, updated_at: new Date().toISOString() })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+
+async function initTraderSettings(userId, profile) {
+  // Creates default settings on first login if none exist
+  const existing = await getTraderSettings(userId);
+  if (existing) return existing;
+  const defaults = { ...DEFAULT_TRADER_SETTINGS };
+  if (profile?.username) defaults.name = profile.username;
+  return await saveTraderSettings(userId, defaults);
+}
+
+/* ══════════════════════════════
+   TRADES (new copilot table)
+══════════════════════════════ */
+
+async function getTrades(userId, filters = {}) {
+  let q = _sb.from('trades').select('*').eq('user_id', userId)
+    .order('date', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (filters.startDate) q = q.gte('date', filters.startDate);
+  if (filters.endDate)   q = q.lte('date', filters.endDate);
+  if (filters.instrument && filters.instrument !== 'all') q = q.eq('instrument', filters.instrument);
+  if (filters.setup && filters.setup !== 'all') q = q.eq('setup_type', filters.setup);
+  if (filters.result && filters.result !== 'all') q = q.eq('result', filters.result);
+  if (filters.limit) q = q.limit(filters.limit);
+  const { data, error } = await q;
+  if (error) throw error;
+  return data || [];
+}
+
+async function getTodayTrades(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await _sb.from('trades').select('*')
+    .eq('user_id', userId).eq('date', today);
+  if (error) throw error;
+  return data || [];
+}
+
+async function createTrade(data) {
+  const { data: row, error } = await _sb.from('trades').insert(data).select().single();
+  if (error) throw error;
+  return row;
+}
+
+async function updateTrade(id, data) {
+  const { data: row, error } = await _sb.from('trades').update(data).eq('id', id).select().single();
+  if (error) throw error;
+  return row;
+}
+
+async function deleteTrade(id) {
+  const { error } = await _sb.from('trades').delete().eq('id', id);
+  if (error) throw error;
+}
+
+async function getTradeStats(userId) {
+  const { data, error } = await _sb.from('trades')
+    .select('pnl, actual_rr, result, date, setup_type, emotional_state')
+    .eq('user_id', userId);
+  if (error) throw error;
+  if (!data || data.length === 0) return {
+    total: 0, wins: 0, losses: 0, winRate: 0, avgRR: 0,
+    totalPnl: 0, todayPnl: 0, todayTrades: 0, todayLosses: 0,
+    streak: 0, bestSetup: '—'
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayTrades = data.filter(r => r.date === today);
+  const todayPnl = todayTrades.reduce((s, r) => s + (r.pnl || 0), 0);
+  const todayLosses = todayTrades.filter(r => r.result === 'Loss').length;
+
+  const wins = data.filter(r => r.result === 'Win').length;
+  const losses = data.filter(r => r.result === 'Loss').length;
+  const totalPnl = data.reduce((s, r) => s + (r.pnl || 0), 0);
+  const rrVals = data.filter(r => r.actual_rr != null && r.result === 'Win').map(r => r.actual_rr);
+  const avgRR = rrVals.length ? rrVals.reduce((s, v) => s + v, 0) / rrVals.length : 0;
+
+  // Streak (consecutive wins or losses from most recent)
+  const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+  let streak = 0;
+  if (sorted.length > 0) {
+    const dir = sorted[0].result === 'Win' ? 'Win' : 'Loss';
+    for (const t of sorted) {
+      if (t.result === dir) streak++;
+      else break;
+    }
+    if (dir === 'Loss') streak = -streak;
+  }
+
+  // Best setup by total P&L
+  const bySetup = {};
+  data.forEach(t => {
+    const s = t.setup_type || 'Other';
+    bySetup[s] = (bySetup[s] || 0) + (t.pnl || 0);
+  });
+  const bestSetup = Object.entries(bySetup).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
+
+  return {
+    total: data.length, wins, losses,
+    winRate: data.length ? (wins / data.length) * 100 : 0,
+    avgRR, totalPnl, todayPnl,
+    todayTrades: todayTrades.length,
+    todayLosses, streak, bestSetup
+  };
+}
+
+async function getEquityCurve(userId) {
+  const { data, error } = await _sb.from('trades')
+    .select('date, pnl, created_at').eq('user_id', userId)
+    .order('date', { ascending: true }).order('created_at', { ascending: true });
+  if (error) throw error;
+  let cum = 0;
+  return (data || []).map(t => {
+    cum += t.pnl || 0;
+    return { date: t.date, pnl: t.pnl || 0, cumPnl: cum };
+  });
+}
+
+/* ══════════════════════════════
+   DAILY LEVELS
+══════════════════════════════ */
+
+async function getTodayLevels(userId) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await _sb.from('daily_levels').select('*')
+    .eq('user_id', userId).eq('date', today).single();
+  if (error && error.code !== 'PGRST116') throw error;
+  return data || null;
+}
+
+async function getRecentLevels(userId, limit = 5) {
+  const { data, error } = await _sb.from('daily_levels').select('*')
+    .eq('user_id', userId).order('date', { ascending: false }).limit(limit);
+  if (error) throw error;
+  return data || [];
+}
+
+async function saveDailyLevels(userId, levels) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await _sb.from('daily_levels')
+    .upsert({ user_id: userId, date: today, ...levels })
+    .select().single();
+  if (error) throw error;
+  return data;
+}
+
+/* ══════════════════════════════
+   PROP FIRM ACCOUNTS
+══════════════════════════════ */
+
+async function getPropFirmAccounts(userId) {
+  const { data, error } = await _sb.from('prop_firm_accounts').select('*')
+    .eq('user_id', userId).order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+async function savePropFirmAccount(userId, account) {
+  const payload = { user_id: userId, ...account, updated_at: new Date().toISOString() };
+  if (account.id) {
+    const { data, error } = await _sb.from('prop_firm_accounts').update(payload).eq('id', account.id).select().single();
+    if (error) throw error;
+    return data;
+  } else {
+    const { data, error } = await _sb.from('prop_firm_accounts').insert(payload).select().single();
+    if (error) throw error;
+    return data;
+  }
+}
+
+async function deletePropFirmAccount(id) {
+  const { error } = await _sb.from('prop_firm_accounts').delete().eq('id', id);
+  if (error) throw error;
+}
+
 /* ── WEEKLY P&L for chart ── */
 
 async function getWeeklyPnl(userId) {

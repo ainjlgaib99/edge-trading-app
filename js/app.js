@@ -7,6 +7,7 @@
 let _session = null;
 let _profile = null;
 let _tradingProfile = null;
+let _traderSettings = null;
 
 /* ══════════════════════════════
    INIT
@@ -21,14 +22,22 @@ async function initApp() {
 
   // 2. Load profile + settings in parallel
   try {
-    const [profile, tradingProf, settings] = await Promise.all([
+    const [profile, tradingProf, settings, traderSettings] = await Promise.all([
       getUserProfile(userId),
       getTradingProfile(userId),
-      getUserSettings(userId)
+      getUserSettings(userId),
+      getTraderSettings(userId)
     ]);
 
     _profile = profile;
     _tradingProfile = tradingProf;
+
+    // Auto-init trader_settings on first login
+    if (!traderSettings) {
+      _traderSettings = await initTraderSettings(userId, profile);
+    } else {
+      _traderSettings = traderSettings;
+    }
 
     // 3. Apply user settings
     if (settings.accent_color) applyAccentColor(settings.accent_color);
@@ -37,15 +46,20 @@ async function initApp() {
     _renderUserChip(profile, _session.user.email);
 
     // 5. Start session timer
-    if (tradingProf?.session_end) {
+    if (_traderSettings?.session_1_end) {
+      const timeStr = _traderSettings.session_1_end.replace(' AM','').replace(' PM','');
+      const [h, m] = timeStr.split(':').map(Number);
+      startSessionTimer(h, m);
+    } else if (tradingProf?.session_end) {
       const [h, m] = tradingProf.session_end.split(':').map(Number);
       startSessionTimer(h, m);
     } else {
       startSessionTimer(8, 0);
     }
 
-    // 6. Update rule chips if trading profile exists
-    if (tradingProf) _renderRuleChips(tradingProf);
+    // 6. Update rule chips
+    if (_traderSettings) _renderRuleChips(_traderSettings);
+    else if (tradingProf) _renderRuleChips(tradingProf);
 
   } catch (err) {
     console.error('[app] profile load error:', err);
@@ -84,11 +98,19 @@ function _renderRuleChips(tp) {
   const el = document.getElementById('sidebarRuleChips');
   if (!el || !tp) return;
 
+  // Support both old trading_profile and new trader_settings schema
+  const risk = tp.max_risk_per_trade || tp.risk_per_trade || 250;
+  const maxRisk = tp.absolute_max_risk || tp.max_risk || 500;
+  const trades = tp.max_trades_per_day || tp.max_trades || 2;
+  const sess = tp.session_1_start ? `${tp.session_1_start}–${tp.session_1_end}` : `${tp.session_start||'6:30'}–${tp.session_end||'8:00'}`;
+  const losses = tp.max_losses_per_day || 2;
+
   const chips = [
-    { label: 'Risk',  val: `$${tp.risk_per_trade}–${tp.max_risk}` },
-    { label: 'Min RR', val: '1:2' },
-    { label: 'Trades', val: `${tp.max_trades}/day` },
-    { label: 'Session', val: `${tp.session_start}–${tp.session_end}` },
+    { label: 'Risk',   val: `$${risk}–${maxRisk}` },
+    { label: 'Min RR', val: `1:${tp.min_rr || 2}` },
+    { label: 'Trades', val: `${trades}/day` },
+    { label: 'Losses', val: `${losses} max` },
+    { label: 'Session', val: sess },
   ];
 
   el.innerHTML = chips.map(c => `
@@ -131,6 +153,16 @@ function _initMobileSidebar() {
   });
 }
 
+// Sync mobile bottom nav active state (called by router)
+function _syncMobileNav(route) {
+  document.querySelectorAll('.mbn-item[data-route]').forEach(item => {
+    const r = item.dataset.route;
+    // Match exact route or prefix for playbook
+    const match = route === r || (r === 'playbook/routine' && route.startsWith('playbook/'));
+    item.classList.toggle('active', match);
+  });
+}
+
 /* ══════════════════════════════
    GLOBAL HELPERS (called from HTML)
 ══════════════════════════════ */
@@ -145,6 +177,7 @@ function toggleSidebar() {
 function getAppSession()        { return _session; }
 function getAppProfile()        { return _profile; }
 function getAppTradingProfile() { return _tradingProfile; }
+function getTraderConfig()      { return _traderSettings; }
 
 /* ══════════════════════════════
    PLAYBOOK NOTES HELPER
