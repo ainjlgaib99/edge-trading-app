@@ -1,0 +1,88 @@
+<div class="page-inner">
+  <div class="sec-header">
+    <div class="sec-num">10 / 10</div>
+    <div class="sec-title">THE JOURNAL</div>
+    <div class="sec-sub">What to track every single trade</div>
+  </div>
+
+  <div class="prose">
+    If you can't look at your journal after 3 months and see a clear pattern — you haven't been honest in your entries. <strong>Log every trade. No exceptions.</strong>
+  </div>
+
+  <div class="journal-grid">
+    <div class="journal-item">
+      <div class="journal-field">Date &amp; Time</div>
+      <div class="journal-example">Apr 7, 2026 · 7:14 AM</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Instrument</div>
+      <div class="journal-example">MNQ / MES</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Setup Type</div>
+      <div class="journal-example">VAH rejection / VAL bounce / POC retest / Second tap</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Entry Price</div>
+      <div class="journal-example">19,241.50</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Stop Price</div>
+      <div class="journal-example">19,257.00 (+15.5 pts)</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Target Price</div>
+      <div class="journal-example">19,210.50 (1:2 RR)</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Planned RR</div>
+      <div class="journal-example">1 : 2.4</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Actual Exit</div>
+      <div class="journal-example">19,214.00 · 7:31 AM</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">P&amp;L</div>
+      <div class="journal-example">+$274</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Followed Rules?</div>
+      <div class="journal-example">Yes / No</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Emotional State (1–10)</div>
+      <div class="journal-example">8 · calm, prepared</div>
+    </div>
+    <div class="journal-item">
+      <div class="journal-field">Notes</div>
+      <div class="journal-example">Clean second tap at VAH, held for full target</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="prose"><strong>Weekly review — ask yourself these every Sunday:</strong></div>
+
+  <div class="callout">
+    <div class="callout-title">Weekly Review Questions</div>
+    What is my win rate by setup type this week?<br>
+    What was my average RR achieved vs planned?<br>
+    Which days did I perform best — and why?<br>
+    Did my emotional state correlate with my P&amp;L?<br>
+    Did I break any rules? If yes — what triggered it?<br>
+    What is the one thing I will do differently next week?
+  </div>
+
+  <div style="margin-top:var(--space-6)">
+    <button class="btn btn-primary" onclick="navigate('journal')">
+      → Open My Journal
+    </button>
+  </div>
+
+  <div class="section-notes">
+    <div class="section-notes-label">My Notes <span class="notes-saved-indicator" id="notesSaved">✓ Saved</span></div>
+    <textarea class="form-textarea" id="playbookNotes" style="min-height:120px" placeholder="Add your personal notes for this section..."></textarea>
+  </div>
+</div>
+<script>async function init_playbook_journal_guide() { await initPlaybookNotes('journal-guide'); }</script>

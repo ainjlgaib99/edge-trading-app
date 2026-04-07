@@ -1,0 +1,50 @@
+<div class="page-inner">
+  <div class="sec-header">
+    <div class="sec-num">08 / 10</div>
+    <div class="sec-title">RISK RULES</div>
+    <div class="sec-sub">The math that keeps you in the game</div>
+  </div>
+
+  <div class="prose">
+    These are not suggestions. Breaking risk rules is the single fastest way to blow an account or fail an eval.
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Standard Risk Per Trade</div>
+    <strong>$200–250.</strong> On a $50K Topstep eval the max drawdown is ~$2,500. Lose 2 trades at $250 each = $500 down. Still well within limits. Still calm. Still able to recover without emotion.
+  </div>
+
+  <div class="callout">
+    <div class="callout-title">Max Risk — High Conviction Only</div>
+    <strong>$500 maximum.</strong> Only on the clearest, cleanest setups — maybe one per week qualifies. Not every trade is $500. Most are $200–250.
+  </div>
+
+  <div class="divider"></div>
+
+  <div class="prose"><strong>How to calculate your stop in ticks:</strong></div>
+
+  <div class="mono-block">
+    <div class="mono-label">MNQ — $2 per tick</div>
+    <span class="dim">$200 risk ÷ $2/tick = </span><strong>100 ticks stop distance</strong><br>
+    <span class="dim">$250 risk ÷ $2/tick = </span><strong>125 ticks stop distance</strong><br>
+    <span class="dim">$500 risk ÷ $2/tick = </span><strong>250 ticks stop distance</strong>
+  </div>
+
+  <div class="mono-block">
+    <div class="mono-label">MES — $5 per tick (0.25 points)</div>
+    <span class="dim">$200 risk ÷ $5/tick = </span><strong>40 ticks stop distance</strong><br>
+    <span class="dim">$250 risk ÷ $5/tick = </span><strong>50 ticks stop distance</strong><br>
+    <span class="dim">$500 risk ÷ $5/tick = </span><strong>100 ticks stop distance</strong>
+  </div>
+
+  <div class="callout danger">
+    <div class="callout-title">Hard Rule</div>
+    If your stop requires more ticks than your risk allows — the setup is not valid. <strong>Skip it.</strong> Do not widen your risk to fit the trade. Let the trade pass.
+  </div>
+
+  <div class="section-notes">
+    <div class="section-notes-label">My Notes <span class="notes-saved-indicator" id="notesSaved">✓ Saved</span></div>
+    <textarea class="form-textarea" id="playbookNotes" style="min-height:120px" placeholder="Add your personal notes for this section..."></textarea>
+  </div>
+</div>
+<script>async function init_playbook_risk() { await initPlaybookNotes('risk'); }</script>

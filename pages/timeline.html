@@ -1,0 +1,190 @@
+<div class="page-inner">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-title">Timeline</div>
+      <div class="page-subtitle">Your path to consistent profitability</div>
+    </div>
+    <div class="page-actions">
+      <span id="daysActive" class="chip">
+        <span class="chip-label">Days active</span>
+        <span class="chip-val" id="daysActiveVal">—</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Milestone badges -->
+  <div id="milestones" class="flex-wrap mb-8"></div>
+
+  <!-- Phase timeline -->
+  <div id="phaseTimeline">
+    <div class="loading-container"><div class="loading-spinner"></div></div>
+  </div>
+
+</div>
+
+<script>
+const PHASES = [
+  {
+    num:    1,
+    period: 'Month 1–3',
+    name:   'Paper Trading',
+    body:   'Paper trading only. Learn to see levels. Learn why you were right or wrong after every trade. Most people skip this because it feels fake. Don\'t. This is where your foundation is built. Journal every single paper trade as if it were real money.',
+    target: 30,
+  },
+  {
+    num:    2,
+    period: 'Month 3–6',
+    name:   'Small Live / Eval',
+    body:   'Small live account or eval account. Real money introduces emotions you cannot simulate on paper. You will discover psychological issues you didn\'t know you had — anger, FOMO, hesitation. These will show up now. Learn from them.',
+    target: 50,
+  },
+  {
+    num:    3,
+    period: 'Month 6–12',
+    name:   'Consistency Emerging',
+    body:   'Consistency starts appearing. You\'ll see a clear edge — certain setups you win on consistently. Others you still struggle with. Start cutting the setups you consistently lose on. Double down on what\'s working.',
+    target: 100,
+  },
+  {
+    num:    4,
+    period: 'Month 12–18',
+    name:   'Real Consistency',
+    body:   'If you\'ve journaled everything and made real adjustments based on data, this is when it comes together. Not every month is green, but you have a repeatable edge and the discipline to execute it.',
+    target: 200,
+  },
+];
+
+const MILESTONES = [
+  { trades: 1,   label: 'First Trade',    icon: '🎯' },
+  { trades: 10,  label: '10 Trades',      icon: '📈' },
+  { trades: 25,  label: '25 Trades',      icon: '⚡' },
+  { trades: 50,  label: '50 Trades',      icon: '🔥' },
+  { trades: 100, label: '100 Trades',     icon: '💎' },
+  { trades: 200, label: '200 Trades',     icon: '🏆' },
+];
+
+async function init_timeline() {
+  const session = getAppSession();
+  if (!session) return;
+  const userId = session.user.id;
+
+  const [progress, entries] = await Promise.all([
+    getTimelineProgress(userId).catch(() => []),
+    getJournalEntries(userId, {}).catch(() => [])
+  ]);
+
+  const totalTrades = entries.length;
+
+  // Days active
+  if (entries.length) {
+    const firstDate = new Date(entries[entries.length - 1].date);
+    const days = Math.floor((new Date() - firstDate) / 86400000);
+    document.getElementById('daysActiveVal').textContent = days + ' days';
+  }
+
+  // Milestones
+  const milestoneEl = document.getElementById('milestones');
+  milestoneEl.innerHTML = MILESTONES.map(m => {
+    const achieved = totalTrades >= m.trades;
+    return `
+      <div class="chip ${achieved ? 'badge-accent' : ''}" style="${achieved ? 'border-color:var(--accent);color:var(--accent)' : 'opacity:0.4'}">
+        <span>${m.icon}</span>
+        <span>${m.label}</span>
+        ${achieved ? '<span>✓</span>' : ''}
+      </div>`;
+  }).join('');
+
+  // Phase breakdown by month
+  const phaseTrades = PHASES.map((p, i) => {
+    // Count trades per phase based on date ranges
+    return entries.filter(e => {
+      const d = new Date(e.date);
+      const first = entries.length ? new Date(entries[entries.length-1].date) : new Date();
+      const daysSince = (d - first) / 86400000;
+      const phaseStart = [0, 90, 180, 360][i];
+      const phaseEnd   = [90, 180, 360, 540][i];
+      return daysSince >= phaseStart && daysSince < phaseEnd;
+    });
+  });
+
+  // Render phases
+  const progressMap = Object.fromEntries(progress.map(p => [p.phase_number, p]));
+
+  document.getElementById('phaseTimeline').innerHTML = PHASES.map((phase, i) => {
+    const phaseEntries = phaseTrades[i];
+    const wins    = phaseEntries.filter(e => e.pnl > 0).length;
+    const winRate = phaseEntries.length ? ((wins / phaseEntries.length) * 100).toFixed(0) : null;
+    const saved   = progressMap[phase.num];
+
+    // Determine status
+    const daysActive = entries.length
+      ? Math.floor((new Date() - new Date(entries[entries.length-1].date)) / 86400000)
+      : 0;
+    const phaseStartDay = [0, 90, 180, 360][i];
+    const phaseEndDay   = [90, 180, 360, 540][i];
+    let status = 'upcoming';
+    if (daysActive >= phaseStartDay && daysActive < phaseEndDay) status = 'active';
+    if (daysActive >= phaseEndDay || saved?.completed_at) status = 'complete';
+
+    const statusColors = { upcoming: 'var(--muted)', active: 'var(--accent)', complete: 'var(--green)' };
+    const statusLabels = { upcoming: 'Upcoming', active: 'Active', complete: 'Complete' };
+
+    return `
+      <div class="tl-item">
+        <div class="tl-left">
+          <div class="tl-dot" style="background:${statusColors[status]};box-shadow:${status==='active'?'0 0 8px '+statusColors[status]:''}`}"></div>
+          ${i < PHASES.length - 1 ? '<div class="tl-line"></div>' : ''}
+        </div>
+        <div class="tl-content">
+          <div class="flex-between mb-2">
+            <div class="tl-period">${phase.period} — ${phase.name}</div>
+            <span class="badge ${status==='complete'?'badge-success':status==='active'?'badge-accent':'badge-muted'}">${statusLabels[status]}</span>
+          </div>
+          <div class="tl-body" style="margin-bottom:var(--space-4)">${phase.body}</div>
+
+          <!-- Stats from journal -->
+          ${phaseEntries.length ? `
+          <div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-4);flex-wrap:wrap">
+            <div class="chip"><span class="chip-label">Trades</span><span class="chip-val">${phaseEntries.length}</span></div>
+            ${winRate !== null ? `<div class="chip"><span class="chip-label">Win Rate</span><span class="chip-val">${winRate}%</span></div>` : ''}
+          </div>` : ''}
+
+          <!-- Personal start date -->
+          <div style="display:flex;gap:var(--space-3);align-items:center;margin-bottom:var(--space-3);flex-wrap:wrap">
+            <div class="form-group" style="margin-bottom:0;flex:1;min-width:160px">
+              <label class="form-label">My Start Date</label>
+              <input class="form-input" type="date" id="phase_start_${phase.num}"
+                value="${saved?.started_at || ''}" onchange="savePhase(${phase.num})">
+            </div>
+            <div class="form-group" style="margin-bottom:0;flex:1;min-width:160px">
+              <label class="form-label">Completed</label>
+              <input class="form-input" type="date" id="phase_end_${phase.num}"
+                value="${saved?.completed_at || ''}" onchange="savePhase(${phase.num})">
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Personal Notes</label>
+            <textarea class="form-textarea" id="phase_notes_${phase.num}"
+              placeholder="What I learned in this phase..."
+              onblur="savePhase(${phase.num})">${saved?.notes || ''}</textarea>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function savePhase(num) {
+  const session = getAppSession();
+  if (!session) return;
+  try {
+    await updateTimelinePhase(session.user.id, num, {
+      phase_name:  PHASES[num-1].name,
+      started_at:  document.getElementById(`phase_start_${num}`)?.value || null,
+      completed_at: document.getElementById(`phase_end_${num}`)?.value  || null,
+      notes:       document.getElementById(`phase_notes_${num}`)?.value || null,
+    });
+  } catch(e) { /* silent */ }
+}
+</script>

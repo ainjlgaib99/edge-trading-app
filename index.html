@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#060608">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>EDGE — Trading Playbook</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+<!-- Mobile backdrop -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+<aside class="sidebar" id="sidebar">
+
+  <!-- Logo -->
+  <div class="sidebar-logo">
+    <div class="logo-mark">EDGE<span>.</span></div>
+    <div class="logo-sub">Trading Playbook</div>
+  </div>
+
+  <!-- User chip -->
+  <div class="sidebar-user">
+    <div class="user-avatar" id="userAvatar">--</div>
+    <div class="user-info">
+      <div class="user-name" id="userName">Loading...</div>
+      <div class="user-plan" id="userPlan">EDGE Trader</div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="sidebar-nav">
+
+    <div class="nav-section-label">Main</div>
+
+    <button class="nav-item" data-route="dashboard" onclick="navigate('dashboard')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/>
+        <rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>
+      </svg>
+      Dashboard
+    </button>
+
+    <div class="nav-section-label">Playbook</div>
+
+    <button class="nav-item nav-sub" data-route="playbook/routine" onclick="navigate('playbook/routine')">
+      <span class="nav-num">01</span>Morning Routine<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/levels" onclick="navigate('playbook/levels')">
+      <span class="nav-num">02</span>Picking Levels<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/entry" onclick="navigate('playbook/entry')">
+      <span class="nav-num">03</span>The Entry<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/manage" onclick="navigate('playbook/manage')">
+      <span class="nav-num">04</span>Trade Management<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/stayout" onclick="navigate('playbook/stayout')">
+      <span class="nav-num">05</span>Stay Out<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/eval" onclick="navigate('playbook/eval')">
+      <span class="nav-num">06</span>Passing Evals<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/mistakes" onclick="navigate('playbook/mistakes')">
+      <span class="nav-num">07</span>Common Mistakes<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/risk" onclick="navigate('playbook/risk')">
+      <span class="nav-num">08</span>Risk Rules<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/timeline-guide" onclick="navigate('playbook/timeline-guide')">
+      <span class="nav-num">09</span>Timeline<span class="nav-check">✓</span>
+    </button>
+    <button class="nav-item nav-sub" data-route="playbook/journal-guide" onclick="navigate('playbook/journal-guide')">
+      <span class="nav-num">10</span>Journal Guide<span class="nav-check">✓</span>
+    </button>
+
+    <div class="nav-section-label">Personal</div>
+
+    <button class="nav-item" data-route="journal" onclick="navigate('journal')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+        <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+        <line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>
+      </svg>
+      Journal
+    </button>
+
+    <button class="nav-item" data-route="timeline" onclick="navigate('timeline')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+        <circle cx="12" cy="12" r="4"/>
+        <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/>
+        <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+      </svg>
+      Timeline
+    </button>
+
+    <button class="nav-item" data-route="profile" onclick="navigate('profile')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      Profile
+    </button>
+
+  </nav>
+
+  <!-- Rule chips -->
+  <div style="padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border);">
+    <div id="sidebarRuleChips" class="rule-chips" style="flex-direction:column;gap:var(--space-2);">
+      <!-- populated by app.js -->
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="sidebar-footer">
+    <button class="nav-item btn-ghost" onclick="logout()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+      Sign Out
+    </button>
+  </div>
+
+</aside>
+
+<!-- ═══════════════════════ MAIN ═══════════════════════ -->
+<div class="main-wrap">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <button class="topbar-hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Toggle menu">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="breadcrumb" id="breadcrumb">
+      <span>EDGE</span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-current">Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <span id="sessionTimer" class="badge badge-accent">--:--</span>
+    </div>
+  </div>
+
+  <!-- Content area — pages load here -->
+  <div id="content">
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Toast ── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ── Modal ── -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle"></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modalContent"></div>
+    <div class="modal-footer" id="modalFooter"></div>
+  </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/router.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>

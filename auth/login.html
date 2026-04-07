@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — EDGE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body class="auth-page">
+
+<div class="auth-card">
+
+  <div class="auth-logo">
+    <div class="auth-logo-mark">EDGE.</div>
+    <div class="auth-logo-sub">Trading Playbook</div>
+  </div>
+
+  <div class="auth-title">Sign In</div>
+
+  <div class="auth-error" id="authError"></div>
+
+  <form id="loginForm" onsubmit="handleLogin(event)">
+    <div class="form-group">
+      <label class="form-label" for="email">Email</label>
+      <input class="form-input" type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <input class="form-input" type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
+    </div>
+
+    <button class="btn btn-primary btn-full btn-lg" type="submit" id="submitBtn">
+      <span id="btnText">Sign In</span>
+      <span class="loading-spinner" id="btnSpinner" style="display:none;width:14px;height:14px;border-width:2px;"></span>
+    </button>
+  </form>
+
+  <div class="auth-links">
+    <a href="signup.html">Create account</a>
+    <a href="reset.html">Forgot password?</a>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+
+redirectIfAuth();
+
+async function handleLogin(e) {
+  e.preventDefault();
+
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errorEl  = document.getElementById('authError');
+  const submitBtn = document.getElementById('submitBtn');
+  const btnText   = document.getElementById('btnText');
+  const btnSpinner = document.getElementById('btnSpinner');
+
+  // Clear error
+  errorEl.textContent = '';
+  errorEl.classList.remove('visible');
+
+  // Show loading
+  submitBtn.disabled    = true;
+  btnText.style.display = 'none';
+  btnSpinner.style.display = 'inline-block';
+
+  try {
+    await login(email, password);
+    window.location.href = '/';
+  } catch (err) {
+    errorEl.textContent = err.message || 'Sign in failed. Check your email and password.';
+    errorEl.classList.add('visible');
+  } finally {
+    submitBtn.disabled       = false;
+    btnText.style.display    = 'inline';
+    btnSpinner.style.display = 'none';
+  }
+}
+
+</script>
+</body>
+</html>

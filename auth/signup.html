@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — EDGE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/reset.css">
+  <link rel="stylesheet" href="../css/variables.css">
+  <link rel="stylesheet" href="../css/layout.css">
+  <link rel="stylesheet" href="../css/components.css">
+</head>
+<body class="auth-page">
+
+<div class="auth-card">
+
+  <div class="auth-logo">
+    <div class="auth-logo-mark">EDGE.</div>
+    <div class="auth-logo-sub">Trading Playbook</div>
+  </div>
+
+  <div class="auth-title">Create Account</div>
+
+  <div class="auth-error" id="authError"></div>
+
+  <form id="signupForm" onsubmit="handleSignup(event)">
+    <div class="form-group">
+      <label class="form-label" for="username">Username</label>
+      <input class="form-input" type="text" id="username" placeholder="TraderAJ" required autocomplete="username">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="email">Email</label>
+      <input class="form-input" type="email" id="email" placeholder="you@example.com" required autocomplete="email">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="password">Password</label>
+      <input class="form-input" type="password" id="password" placeholder="Min. 8 characters" required minlength="8" autocomplete="new-password">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="confirm">Confirm Password</label>
+      <input class="form-input" type="password" id="confirm" placeholder="••••••••" required autocomplete="new-password">
+    </div>
+
+    <button class="btn btn-primary btn-full btn-lg" type="submit" id="submitBtn">
+      <span id="btnText">Create Account</span>
+      <span class="loading-spinner" id="btnSpinner" style="display:none;width:14px;height:14px;border-width:2px;"></span>
+    </button>
+  </form>
+
+  <div class="auth-links">
+    <a href="login.html">Already have an account? Sign in</a>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+
+redirectIfAuth();
+
+async function handleSignup(e) {
+  e.preventDefault();
+
+  const username = document.getElementById('username').value.trim();
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const confirm  = document.getElementById('confirm').value;
+  const errorEl  = document.getElementById('authError');
+  const submitBtn = document.getElementById('submitBtn');
+  const btnText   = document.getElementById('btnText');
+  const btnSpinner = document.getElementById('btnSpinner');
+
+  errorEl.classList.remove('visible');
+
+  if (password !== confirm) {
+    errorEl.textContent = 'Passwords do not match.';
+    errorEl.classList.add('visible');
+    return;
+  }
+
+  submitBtn.disabled       = true;
+  btnText.style.display    = 'none';
+  btnSpinner.style.display = 'inline-block';
+
+  try {
+    const data = await signup(email, password, username);
+    // If email confirmation required, show message
+    if (!data.session) {
+      errorEl.style.color = 'var(--green)';
+      errorEl.textContent = 'Account created! Check your email to confirm.';
+      errorEl.classList.add('visible');
+    } else {
+      window.location.href = '/';
+    }
+  } catch (err) {
+    errorEl.style.color = '';
+    errorEl.textContent = err.message || 'Signup failed. Please try again.';
+    errorEl.classList.add('visible');
+  } finally {
+    submitBtn.disabled       = false;
+    btnText.style.display    = 'inline';
+    btnSpinner.style.display = 'none';
+  }
+}
+
+</script>
+</body>
+</html>

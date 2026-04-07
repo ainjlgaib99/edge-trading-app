@@ -1,0 +1,328 @@
+<div class="page-inner">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-title" id="dashGreeting">Good morning</div>
+      <div class="page-subtitle" id="dashDate">Loading...</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openLogTradeModal()">
+        + Log Trade
+      </button>
+    </div>
+  </div>
+
+  <!-- Stat cards -->
+  <div class="stat-grid" id="statGrid">
+    <div class="stat-card">
+      <div class="stat-label">Win Rate</div>
+      <div class="stat-value" id="statWinRate">—</div>
+      <div class="stat-change" id="statWinRateSub">all time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg R:R</div>
+      <div class="stat-value" id="statAvgRR">—</div>
+      <div class="stat-change" id="statAvgRRSub">achieved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Month P&amp;L</div>
+      <div class="stat-value" id="statMonthPnl">—</div>
+      <div class="stat-change" id="statMonthSub">this month</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Today</div>
+      <div class="stat-value" id="statTodayTrades">—</div>
+      <div class="stat-change" id="statTodaySub">trades</div>
+    </div>
+  </div>
+
+  <!-- Weekly chart + Recent trades -->
+  <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:var(--space-6);margin-bottom:var(--space-8);" class="dash-grid">
+
+    <!-- Weekly P&L chart -->
+    <div class="card">
+      <div class="card-title flex-between">
+        <span>Weekly P&amp;L</span>
+        <span class="text-muted text-mono" id="weekTotal" style="font-size:var(--text-xs)"></span>
+      </div>
+      <div class="chart-wrap" id="weekChart" style="height:160px;padding:var(--space-4) var(--space-4) 0;gap:var(--space-1);">
+        <div style="display:flex;align-items:center;justify-content:center;width:100%;color:var(--muted);font-size:var(--text-xs);">Loading chart...</div>
+      </div>
+      <div style="display:flex;justify-content:space-around;padding:var(--space-2) var(--space-4) 0;font-size:var(--text-xs);color:var(--muted);">
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span>
+      </div>
+    </div>
+
+    <!-- Rule chips -->
+    <div class="card">
+      <div class="card-title">Risk Rules</div>
+      <div id="dashRuleChips" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);">
+        <div class="loading-container" style="padding:var(--space-4);grid-column:1/-1;">
+          <div class="loading-spinner"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Recent trades -->
+  <div class="card">
+    <div class="flex-between mb-4">
+      <div class="card-title" style="margin-bottom:0">Recent Trades</div>
+      <button class="btn btn-ghost btn-sm" onclick="navigate('journal')">View all →</button>
+    </div>
+    <div id="recentTrades">
+      <div class="loading-container"><div class="loading-spinner"></div></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+async function init_dashboard() {
+  const session = getAppSession();
+  if (!session) return;
+  const userId = session.user.id;
+
+  // Greeting + date
+  document.getElementById('dashGreeting').textContent =
+    getGreeting() + ', ' + (getAppProfile()?.username || session.user.email?.split('@')[0] || 'Trader');
+  document.getElementById('dashDate').textContent =
+    new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric', year:'numeric' });
+
+  // Load stats + recent trades in parallel
+  const [stats, weekPnl, entries, tp] = await Promise.all([
+    getJournalStats(userId).catch(() => null),
+    getWeeklyPnl(userId).catch(() => []),
+    getJournalEntries(userId, { limit: 5 }).catch(() => []),
+    getTradingProfile(userId).catch(() => null)
+  ]);
+
+  // Stats
+  if (stats) {
+    const wr = document.getElementById('statWinRate');
+    const rr = document.getElementById('statAvgRR');
+    const mp = document.getElementById('statMonthPnl');
+    const td = document.getElementById('statTodayTrades');
+
+    wr.textContent = stats.total > 0 ? formatPct(stats.winRate) : '—';
+    wr.className   = 'stat-value ' + (stats.winRate >= 50 ? 'green' : stats.winRate > 0 ? '' : '');
+
+    rr.textContent = stats.avgRR > 0 ? formatRR(stats.avgRR) : '—';
+
+    mp.textContent = stats.monthPnl !== 0 ? formatCurrencyFull(stats.monthPnl) : '$0';
+    mp.className   = 'stat-value ' + (stats.monthPnl > 0 ? 'green' : stats.monthPnl < 0 ? 'red' : '');
+
+    td.textContent = stats.todayTrades || '0';
+    document.getElementById('statTodaySub').textContent =
+      stats.todayTrades >= (tp?.max_trades || 2) ? '⚠ limit reached' : 'trades';
+  }
+
+  // Weekly chart
+  if (weekPnl.length) {
+    const max = Math.max(...weekPnl.map(d => Math.abs(d.pnl)), 1);
+    const total = weekPnl.reduce((s,d) => s+d.pnl, 0);
+    const chartEl = document.getElementById('weekChart');
+    chartEl.innerHTML = weekPnl.map(d => {
+      const h = Math.max((Math.abs(d.pnl) / max) * 120, 4);
+      const cls = d.pnl > 0 ? 'pos' : d.pnl < 0 ? 'neg' : 'neutral';
+      return `<div class="chart-bar ${cls}" style="height:${h}px">
+        <div class="chart-tooltip">${d.label}: ${d.pnl > 0 ? '+' : ''}$${d.pnl.toFixed(0)}</div>
+      </div>`;
+    }).join('');
+    document.getElementById('weekTotal').textContent =
+      (total > 0 ? '+' : '') + '$' + total.toFixed(0) + ' this week';
+  }
+
+  // Rule chips
+  if (tp) {
+    document.getElementById('dashRuleChips').innerHTML = [
+      ['Risk / Trade', `$${tp.risk_per_trade}–${tp.max_risk}`],
+      ['Min RR',       '1 : 2'],
+      ['Max Trades',   `${tp.max_trades} / day`],
+      ['Stop After',   '2 losses'],
+      ['Session',      `${tp.session_start}–${tp.session_end}`],
+      ['Instruments',  tp.instruments || 'MNQ · MES'],
+    ].map(([l, v]) => `
+      <div class="chip" style="flex-direction:column;align-items:flex-start;gap:2px;border-radius:var(--radius-md);padding:var(--space-3);">
+        <span style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)">${l}</span>
+        <span style="font-size:var(--text-sm);color:var(--text);font-weight:500">${v}</span>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('dashRuleChips').innerHTML = `
+      <div style="grid-column:1/-1;text-align:center;padding:var(--space-4)">
+        <p style="font-size:var(--text-sm);color:var(--muted);margin-bottom:var(--space-3)">No risk profile set yet.</p>
+        <button class="btn btn-secondary btn-sm" onclick="navigate('profile')">Set Up Profile →</button>
+      </div>`;
+  }
+
+  // Recent trades table
+  const tableEl = document.getElementById('recentTrades');
+  if (!entries.length) {
+    tableEl.innerHTML = `
+      <div class="empty-state" style="padding:var(--space-8)">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No trades yet</div>
+        <div class="empty-msg">Log your first trade to start tracking your edge.</div>
+        <button class="btn btn-primary btn-sm" onclick="openLogTradeModal()">Log a Trade</button>
+      </div>`;
+    return;
+  }
+
+  tableEl.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Instrument</th>
+          <th>Setup</th>
+          <th class="text-right">P&amp;L</th>
+          <th class="text-right">R:R</th>
+          <th>Rules</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${entries.map(e => `
+          <tr onclick="navigate('journal')">
+            <td class="text-mono" style="font-size:var(--text-xs)">${formatDateShort(e.date)}</td>
+            <td>${e.instrument || '—'}</td>
+            <td style="color:var(--muted);font-size:var(--text-xs)">${e.setup_type || '—'}</td>
+            <td class="text-right ${pnlClass(e.pnl)}">${e.pnl != null ? (e.pnl >= 0 ? '+' : '') + '$' + Math.abs(e.pnl).toFixed(0) : '—'}</td>
+            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.actual_rr ? formatRR(e.actual_rr) : '—'}</td>
+            <td>
+              <span class="badge ${e.followed_rules ? 'badge-success' : 'badge-danger'}">
+                ${e.followed_rules ? '✓' : '✕'}
+              </span>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function openLogTradeModal() {
+  const today = new Date().toISOString().slice(0,10);
+  modal('Log Trade', `
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" type="date" id="tj_date" value="${today}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Instrument</label>
+        <select class="form-select" id="tj_instrument">
+          <option value="MNQ">MNQ</option>
+          <option value="MES">MES</option>
+          <option value="NQ">NQ</option>
+          <option value="ES">ES</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Setup Type</label>
+      <select class="form-select" id="tj_setup">
+        <option value="VAH Rejection">VAH Rejection (Short)</option>
+        <option value="VAL Bounce">VAL Bounce (Long)</option>
+        <option value="POC Retest">POC Retest</option>
+        <option value="Second Tap">Second Tap</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Entry Price</label>
+        <input class="form-input" type="number" id="tj_entry" placeholder="19241.50" step="0.25">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stop Price</label>
+        <input class="form-input" type="number" id="tj_stop" placeholder="19257.00" step="0.25">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Actual Exit</label>
+        <input class="form-input" type="number" id="tj_exit" placeholder="19214.00" step="0.25">
+      </div>
+      <div class="form-group">
+        <label class="form-label">P&amp;L ($)</label>
+        <input class="form-input" type="number" id="tj_pnl" placeholder="+274">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Planned R:R</label>
+        <input class="form-input" type="number" id="tj_planned_rr" placeholder="2.4" step="0.1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emotion (1–10)</label>
+        <input class="form-input" type="number" id="tj_emotion" placeholder="8" min="1" max="10">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Followed Rules?</label>
+      <select class="form-select" id="tj_rules">
+        <option value="true">Yes ✓</option>
+        <option value="false">No ✕</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="tj_notes" placeholder="Clean second tap at VAH, held for full target..."></textarea>
+    </div>
+  `, [
+    { label: 'Cancel', type: 'secondary', onClick: () => closeModal() },
+    { label: 'Save Trade', type: 'primary', onClick: saveQuickTrade }
+  ]);
+}
+
+async function saveQuickTrade() {
+  const session = getAppSession();
+  if (!session) return;
+
+  const entry = Number(document.getElementById('tj_entry').value);
+  const stop  = Number(document.getElementById('tj_stop').value);
+  const exit  = Number(document.getElementById('tj_exit').value);
+
+  let actualRR = null;
+  if (entry && stop && exit) {
+    const risk   = Math.abs(entry - stop);
+    const reward = Math.abs(exit - entry);
+    actualRR = risk > 0 ? reward / risk : null;
+  }
+
+  const data = {
+    user_id:         session.user.id,
+    date:            document.getElementById('tj_date').value,
+    instrument:      document.getElementById('tj_instrument').value,
+    setup_type:      document.getElementById('tj_setup').value,
+    entry_price:     entry || null,
+    stop_price:      stop  || null,
+    actual_exit:     exit  || null,
+    pnl:             Number(document.getElementById('tj_pnl').value) || null,
+    planned_rr:      Number(document.getElementById('tj_planned_rr').value) || null,
+    actual_rr:       actualRR,
+    followed_rules:  document.getElementById('tj_rules').value === 'true',
+    emotional_state: Number(document.getElementById('tj_emotion').value) || null,
+    notes:           document.getElementById('tj_notes').value.trim() || null,
+  };
+
+  try {
+    await createJournalEntry(data);
+    closeModal();
+    toast('Trade logged ✓', 'success');
+    // Reload dashboard
+    delete window._pageCache?.dashboard;
+    await init_dashboard();
+  } catch (err) {
+    toast('Failed to save: ' + err.message, 'error');
+  }
+}
+</script>
+
+<style>
+@media (max-width: 768px) {
+  .dash-grid { grid-template-columns: 1fr !important; }
+}
+</style>

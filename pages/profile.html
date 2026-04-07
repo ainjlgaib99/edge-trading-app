@@ -1,0 +1,271 @@
+<div class="page-inner">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-title">Profile</div>
+      <div class="page-subtitle">Your identity, rules, and career stats</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" id="saveProfileBtn" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+
+  <!-- Avatar + identity -->
+  <div class="card mb-6">
+    <div style="display:flex;align-items:center;gap:var(--space-6);margin-bottom:var(--space-6)">
+      <div id="profileAvatar" style="width:64px;height:64px;border-radius:var(--radius-lg);background:var(--accent-dim);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:24px;font-weight:700;color:var(--accent);flex-shrink:0">
+        --
+      </div>
+      <div>
+        <div id="profileName" style="font-family:var(--font-display);font-size:var(--text-xl);letter-spacing:1px">Loading...</div>
+        <div id="profileEmail" style="font-size:var(--text-sm);color:var(--muted);margin-top:2px"></div>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" type="text" id="p_username" placeholder="TraderAJ">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Accent Color</label>
+        <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;margin-top:var(--space-1)">
+          ${['#c8ff00','#7c5cfc','#14b8a6','#f43f5e','#f97316','#38bdf8'].map(c =>
+            `<div onclick="pickAccent('${c}')" style="width:24px;height:24px;border-radius:50%;background:${c};cursor:pointer;border:2px solid transparent;transition:all 0.12s" data-color="${c}"></div>`
+          ).join('')}
+          <input type="color" id="customAccent" style="width:24px;height:24px;border:none;background:none;cursor:pointer;padding:0;border-radius:50%" onchange="pickAccent(this.value)">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Risk rules -->
+  <div class="card mb-6">
+    <div class="card-title">Risk Rules</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Risk / Trade ($)</label>
+        <input class="form-input" type="number" id="p_risk" placeholder="200">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max Risk ($)</label>
+        <input class="form-input" type="number" id="p_max_risk" placeholder="500">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Daily Loss Limit ($)</label>
+        <input class="form-input" type="number" id="p_daily_limit" placeholder="500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Max Trades / Day</label>
+        <input class="form-input" type="number" id="p_max_trades" placeholder="2" min="1" max="10">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Session Start</label>
+        <input class="form-input" type="time" id="p_session_start" value="06:30">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Session End</label>
+        <input class="form-input" type="time" id="p_session_end" value="08:00">
+      </div>
+    </div>
+  </div>
+
+  <!-- Firm / eval -->
+  <div class="card mb-6">
+    <div class="card-title">Firm &amp; Evaluation</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Firm / Platform</label>
+        <input class="form-input" type="text" id="p_firm" placeholder="Topstep / Apex / Lucid">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Account Size ($)</label>
+        <input class="form-input" type="number" id="p_account_size" placeholder="50000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Instruments</label>
+        <input class="form-input" type="text" id="p_instruments" placeholder="MNQ, MES">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Min Trade Days</label>
+        <input class="form-input" type="number" id="p_min_days" placeholder="10" min="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- Career stats (read-only) -->
+  <div class="card mb-6">
+    <div class="card-title">Career Stats</div>
+    <div class="stat-grid" style="margin-bottom:0" id="careerStats">
+      <div class="loading-container" style="grid-column:1/-1;padding:var(--space-4)">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="card mb-6">
+    <div class="card-title">Display Settings</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Font Size</label>
+        <select class="form-select" id="p_font_size">
+          <option value="small">Small</option>
+          <option value="medium" selected>Medium</option>
+          <option value="large">Large</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Spacing</label>
+        <select class="form-select" id="p_spacing">
+          <option value="compact">Compact</option>
+          <option value="comfortable" selected>Comfortable</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Danger zone -->
+  <div class="card card-danger">
+    <div class="card-title" style="color:var(--red)">Danger Zone</div>
+    <p style="font-size:var(--text-sm);color:var(--muted);margin-bottom:var(--space-4);line-height:1.6">
+      Permanently delete your account and all data. This cannot be undone.
+    </p>
+    <button class="btn btn-danger" onclick="deleteAccountConfirm()">Delete Account</button>
+  </div>
+
+</div>
+
+<script>
+let _currentAccent = '#c8ff00';
+
+async function init_profile() {
+  const session = getAppSession();
+  if (!session) return;
+  const userId = session.user.id;
+
+  const [profile, tp, settings, stats] = await Promise.all([
+    getUserProfile(userId).catch(() => null),
+    getTradingProfile(userId).catch(() => null),
+    getUserSettings(userId).catch(() => null),
+    getJournalStats(userId).catch(() => null)
+  ]);
+
+  // Avatar + identity
+  const name = profile?.username || session.user.email?.split('@')[0] || 'Trader';
+  document.getElementById('profileAvatar').textContent = getInitials(name);
+  document.getElementById('profileName').textContent   = name;
+  document.getElementById('profileEmail').textContent  = session.user.email || '';
+  document.getElementById('p_username').value          = profile?.username || '';
+
+  // Trading profile
+  if (tp) {
+    document.getElementById('p_risk').value          = tp.risk_per_trade || '';
+    document.getElementById('p_max_risk').value      = tp.max_risk       || '';
+    document.getElementById('p_daily_limit').value   = tp.daily_limit    || '';
+    document.getElementById('p_max_trades').value    = tp.max_trades     || '';
+    document.getElementById('p_session_start').value = tp.session_start  || '06:30';
+    document.getElementById('p_session_end').value   = tp.session_end    || '08:00';
+    document.getElementById('p_firm').value          = tp.firm           || '';
+    document.getElementById('p_account_size').value  = tp.account_size   || '';
+    document.getElementById('p_instruments').value   = tp.instruments    || '';
+    document.getElementById('p_min_days').value      = tp.min_trade_days || '';
+  }
+
+  // Settings
+  if (settings) {
+    _currentAccent = settings.accent_color || '#c8ff00';
+    document.getElementById('p_font_size').value = settings.font_size || 'medium';
+    document.getElementById('p_spacing').value   = settings.spacing   || 'comfortable';
+    // Highlight current swatch
+    document.querySelectorAll('[data-color]').forEach(el => {
+      el.style.borderColor = el.dataset.color === _currentAccent ? 'white' : 'transparent';
+    });
+  }
+
+  // Career stats
+  if (stats) {
+    document.getElementById('careerStats').innerHTML = `
+      <div class="stat-card"><div class="stat-label">Total Trades</div><div class="stat-value">${stats.total}</div></div>
+      <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value ${stats.winRate>=50?'green':'red'}">${stats.total?formatPct(stats.winRate):'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg R:R</div><div class="stat-value">${stats.avgRR>0?formatRR(stats.avgRR):'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">All-Time P&L</div><div class="stat-value ${stats.totalPnl>=0?'green':'red'}">${stats.totalPnl?formatCurrencyFull(stats.totalPnl):'$0'}</div></div>
+    `;
+  }
+}
+
+function pickAccent(hex) {
+  _currentAccent = hex;
+  applyAccentColor(hex);
+  document.querySelectorAll('[data-color]').forEach(el => {
+    el.style.borderColor = el.dataset.color === hex ? 'white' : 'transparent';
+  });
+}
+
+async function saveProfile() {
+  const session = getAppSession();
+  if (!session) return;
+  const userId = session.user.id;
+  const btn = document.getElementById('saveProfileBtn');
+
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    await Promise.all([
+      updateUserProfile(userId, {
+        username: document.getElementById('p_username').value.trim()
+      }),
+      updateTradingProfile(userId, {
+        risk_per_trade: Number(document.getElementById('p_risk').value)          || null,
+        max_risk:       Number(document.getElementById('p_max_risk').value)       || null,
+        daily_limit:    Number(document.getElementById('p_daily_limit').value)    || null,
+        max_trades:     Number(document.getElementById('p_max_trades').value)     || null,
+        session_start:  document.getElementById('p_session_start').value,
+        session_end:    document.getElementById('p_session_end').value,
+        firm:           document.getElementById('p_firm').value.trim()            || null,
+        account_size:   Number(document.getElementById('p_account_size').value)  || null,
+        instruments:    document.getElementById('p_instruments').value.trim()     || null,
+        min_trade_days: Number(document.getElementById('p_min_days').value)       || null,
+      }),
+      saveUserSettings(userId, {
+        accent_color: _currentAccent,
+        font_size:    document.getElementById('p_font_size').value,
+        spacing:      document.getElementById('p_spacing').value,
+      })
+    ]);
+
+    toast('Profile saved ✓', 'success');
+
+    // Update sidebar
+    const name = document.getElementById('p_username').value.trim();
+    if (name) {
+      const avatarEl = document.getElementById('userAvatar');
+      const nameEl   = document.getElementById('userName');
+      if (avatarEl) avatarEl.textContent = getInitials(name);
+      if (nameEl)   nameEl.textContent   = name;
+    }
+
+  } catch (err) {
+    toast('Failed to save: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Changes';
+  }
+}
+
+async function deleteAccountConfirm() {
+  const ok = await confirmDialog('Delete your account and ALL data permanently? This cannot be undone.');
+  if (!ok) return;
+  const ok2 = await confirmDialog('Are you absolutely sure? All trades, notes, and settings will be gone forever.');
+  if (!ok2) return;
+  try {
+    await logout();
+  } catch(e) { toast('Please contact support to delete your account.', 'error'); }
+}
+</script>

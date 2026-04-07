@@ -1,0 +1,317 @@
+<div class="page-inner">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-title">Journal</div>
+      <div class="page-subtitle">Every trade. No exceptions.</div>
+    </div>
+    <div class="page-actions">
+      <button class="btn btn-primary" onclick="openJournalEntry()">+ New Entry</button>
+    </div>
+  </div>
+
+  <!-- Stats bar -->
+  <div class="stat-grid" id="journalStats" style="margin-bottom:var(--space-6)">
+    <div class="stat-card"><div class="stat-label">Total Trades</div><div class="stat-value" id="js_total">—</div></div>
+    <div class="stat-card"><div class="stat-label">Win Rate</div><div class="stat-value" id="js_wr">—</div></div>
+    <div class="stat-card"><div class="stat-label">Avg R:R</div><div class="stat-value" id="js_rr">—</div></div>
+    <div class="stat-card"><div class="stat-label">Total P&amp;L</div><div class="stat-value" id="js_pnl">—</div></div>
+  </div>
+
+  <!-- Filter bar -->
+  <div class="card" style="margin-bottom:var(--space-4);padding:var(--space-4)">
+    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:center">
+      <input class="form-input" type="date" id="f_start" style="width:auto" onchange="loadJournal()">
+      <input class="form-input" type="date" id="f_end"   style="width:auto" onchange="loadJournal()">
+      <select class="form-select" id="f_instrument" style="width:auto" onchange="loadJournal()">
+        <option value="all">All Instruments</option>
+        <option value="MNQ">MNQ</option>
+        <option value="MES">MES</option>
+        <option value="NQ">NQ</option>
+        <option value="ES">ES</option>
+      </select>
+      <select class="form-select" id="f_result" style="width:auto" onchange="loadJournal()">
+        <option value="all">Win &amp; Loss</option>
+        <option value="win">Wins only</option>
+        <option value="loss">Losses only</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Entries -->
+  <div class="table-wrap" id="journalTable">
+    <div class="loading-container"><div class="loading-spinner"></div></div>
+  </div>
+
+  <!-- Entry detail (expanded) -->
+  <div id="entryDetail" style="display:none;margin-top:var(--space-4)"></div>
+
+</div>
+
+<script>
+let _entries = [];
+let _expandedId = null;
+
+async function init_journal() {
+  const session = getAppSession();
+  if (!session) return;
+  await loadJournal();
+}
+
+async function loadJournal() {
+  const session = getAppSession();
+  if (!session) return;
+  const userId = session.user.id;
+
+  const filters = {
+    startDate:  document.getElementById('f_start')?.value      || null,
+    endDate:    document.getElementById('f_end')?.value        || null,
+    instrument: document.getElementById('f_instrument')?.value || 'all',
+    result:     document.getElementById('f_result')?.value     || 'all',
+  };
+
+  try {
+    const [entries, stats] = await Promise.all([
+      getJournalEntries(userId, filters),
+      getJournalStats(userId)
+    ]);
+    _entries = entries;
+    renderStats(stats);
+    renderTable(entries);
+  } catch (err) {
+    toast('Failed to load journal: ' + err.message, 'error');
+  }
+}
+
+function renderStats(s) {
+  if (!s) return;
+  document.getElementById('js_total').textContent = s.total || '0';
+  const wr = document.getElementById('js_wr');
+  wr.textContent = s.total > 0 ? formatPct(s.winRate) : '—';
+  wr.className   = 'stat-value ' + (s.winRate >= 50 ? 'green' : 'red');
+  document.getElementById('js_rr').textContent  = s.avgRR > 0 ? formatRR(s.avgRR) : '—';
+  const pnlEl = document.getElementById('js_pnl');
+  pnlEl.textContent = s.totalPnl !== 0 ? formatCurrencyFull(s.totalPnl) : '$0';
+  pnlEl.className   = 'stat-value ' + (s.totalPnl > 0 ? 'green' : s.totalPnl < 0 ? 'red' : '');
+}
+
+function renderTable(entries) {
+  const el = document.getElementById('journalTable');
+  if (!entries.length) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No trades found</div>
+        <div class="empty-msg">Log your first trade or adjust the filters.</div>
+        <button class="btn btn-primary btn-sm" onclick="openJournalEntry()">+ Log Trade</button>
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Instrument</th>
+          <th>Setup</th>
+          <th class="text-right">Entry</th>
+          <th class="text-right">Stop</th>
+          <th class="text-right">P&amp;L</th>
+          <th class="text-right">R:R</th>
+          <th>Rules</th>
+          <th>Emotion</th>
+        </tr>
+      </thead>
+      <tbody id="journalBody">
+        ${entries.map(e => `
+          <tr data-id="${e.id}" onclick="toggleEntry('${e.id}')">
+            <td class="text-mono" style="font-size:var(--text-xs)">${formatDate(e.date)}</td>
+            <td>${e.instrument || '—'}</td>
+            <td style="color:var(--muted);font-size:var(--text-xs);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.setup_type || '—'}</td>
+            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.entry_price || '—'}</td>
+            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.stop_price  || '—'}</td>
+            <td class="text-right ${pnlClass(e.pnl)}">${e.pnl != null ? (e.pnl >= 0 ? '+' : '') + '$' + Math.abs(e.pnl).toFixed(0) : '—'}</td>
+            <td class="text-right text-mono" style="font-size:var(--text-xs)">${e.actual_rr ? formatRR(e.actual_rr) : '—'}</td>
+            <td><span class="badge ${e.followed_rules ? 'badge-success' : 'badge-danger'}">${e.followed_rules ? 'Yes' : 'No'}</span></td>
+            <td style="color:var(--muted);font-size:var(--text-xs)">${e.emotional_state ? e.emotional_state + '/10' : '—'}</td>
+          </tr>
+          <tr id="detail-${e.id}" style="display:none">
+            <td colspan="9" style="padding:0">
+              <div style="padding:var(--space-4) var(--space-6);background:var(--surface);border-top:1px solid var(--border)">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-bottom:var(--space-4)">
+                  <div><div class="form-label">Target Price</div><div class="text-mono" style="margin-top:4px">${e.target_price || '—'}</div></div>
+                  <div><div class="form-label">Planned R:R</div><div class="text-mono" style="margin-top:4px">${e.planned_rr ? formatRR(e.planned_rr) : '—'}</div></div>
+                  <div><div class="form-label">Actual Exit</div><div class="text-mono" style="margin-top:4px">${e.actual_exit || '—'}</div></div>
+                </div>
+                ${e.notes ? `<div class="form-label" style="margin-bottom:4px">Notes</div><div style="font-size:var(--text-sm);color:var(--muted);line-height:1.6">${e.notes}</div>` : ''}
+                <div style="display:flex;gap:var(--space-3);margin-top:var(--space-4)">
+                  <button class="btn btn-secondary btn-sm" onclick="editEntry('${e.id}')">Edit</button>
+                  <button class="btn btn-danger btn-sm" onclick="deleteEntryConfirm('${e.id}')">Delete</button>
+                </div>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function toggleEntry(id) {
+  const row = document.getElementById('detail-' + id);
+  if (!row) return;
+  const isOpen = row.style.display !== 'none';
+  // Close all
+  document.querySelectorAll('[id^="detail-"]').forEach(r => r.style.display = 'none');
+  if (!isOpen) row.style.display = 'table-row';
+}
+
+function clearFilters() {
+  document.getElementById('f_start').value      = '';
+  document.getElementById('f_end').value        = '';
+  document.getElementById('f_instrument').value = 'all';
+  document.getElementById('f_result').value     = 'all';
+  loadJournal();
+}
+
+function openJournalEntry(existing) {
+  const isEdit = !!existing;
+  const e = existing || {};
+  const today = new Date().toISOString().slice(0,10);
+
+  modal(isEdit ? 'Edit Trade' : 'New Journal Entry', `
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Date</label>
+        <input class="form-input" type="date" id="je_date" value="${e.date || today}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Instrument</label>
+        <select class="form-select" id="je_instrument">
+          ${['MNQ','MES','NQ','ES'].map(i => `<option ${e.instrument===i?'selected':''}>${i}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Setup Type</label>
+      <select class="form-select" id="je_setup">
+        ${['VAH Rejection','VAL Bounce','POC Retest','Second Tap','Other'].map(s =>
+          `<option ${e.setup_type===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
+      <div class="form-group">
+        <label class="form-label">Entry</label>
+        <input class="form-input" type="number" id="je_entry" value="${e.entry_price||''}" step="0.25">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Stop</label>
+        <input class="form-input" type="number" id="je_stop" value="${e.stop_price||''}" step="0.25">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target</label>
+        <input class="form-input" type="number" id="je_target" value="${e.target_price||''}" step="0.25">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-3)">
+      <div class="form-group">
+        <label class="form-label">Planned R:R</label>
+        <input class="form-input" type="number" id="je_planned_rr" value="${e.planned_rr||''}" step="0.1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Actual Exit</label>
+        <input class="form-input" type="number" id="je_exit" value="${e.actual_exit||''}" step="0.25">
+      </div>
+      <div class="form-group">
+        <label class="form-label">P&amp;L ($)</label>
+        <input class="form-input" type="number" id="je_pnl" value="${e.pnl||''}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Followed Rules?</label>
+        <select class="form-select" id="je_rules">
+          <option value="true" ${e.followed_rules!==false?'selected':''}>Yes ✓</option>
+          <option value="false" ${e.followed_rules===false?'selected':''}>No ✕</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Emotional State (1–10)</label>
+        <input class="form-input" type="number" id="je_emotion" value="${e.emotional_state||''}" min="1" max="10">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="je_notes">${e.notes||''}</textarea>
+    </div>
+  `, [
+    { label: 'Cancel', type: 'secondary', onClick: () => closeModal() },
+    { label: isEdit ? 'Update' : 'Save', type: 'primary', onClick: () => saveJournalEntry(isEdit ? e.id : null) }
+  ]);
+}
+
+async function saveJournalEntry(editId) {
+  const session = getAppSession();
+  if (!session) return;
+
+  const entry = Number(document.getElementById('je_entry').value);
+  const stop  = Number(document.getElementById('je_stop').value);
+  const exit  = Number(document.getElementById('je_exit').value);
+  let actualRR = null;
+  if (entry && stop && exit) {
+    const risk   = Math.abs(entry - stop);
+    const reward = Math.abs(exit - entry);
+    actualRR = risk > 0 ? +(reward / risk).toFixed(2) : null;
+  }
+
+  const data = {
+    user_id:         session.user.id,
+    date:            document.getElementById('je_date').value,
+    instrument:      document.getElementById('je_instrument').value,
+    setup_type:      document.getElementById('je_setup').value,
+    entry_price:     entry || null,
+    stop_price:      stop  || null,
+    target_price:    Number(document.getElementById('je_target').value)  || null,
+    actual_exit:     exit  || null,
+    pnl:             Number(document.getElementById('je_pnl').value)     || null,
+    planned_rr:      Number(document.getElementById('je_planned_rr').value) || null,
+    actual_rr:       actualRR,
+    followed_rules:  document.getElementById('je_rules').value === 'true',
+    emotional_state: Number(document.getElementById('je_emotion').value) || null,
+    notes:           document.getElementById('je_notes').value.trim()    || null,
+  };
+
+  try {
+    if (editId) {
+      await updateJournalEntry(editId, data);
+      toast('Trade updated ✓', 'success');
+    } else {
+      await createJournalEntry(data);
+      toast('Trade logged ✓', 'success');
+    }
+    closeModal();
+    await loadJournal();
+  } catch (err) {
+    toast('Failed to save: ' + err.message, 'error');
+  }
+}
+
+function editEntry(id) {
+  const entry = _entries.find(e => e.id === id);
+  if (entry) openJournalEntry(entry);
+}
+
+async function deleteEntryConfirm(id) {
+  const ok = await confirmDialog('Delete this trade? This cannot be undone.');
+  if (!ok) return;
+  try {
+    await deleteJournalEntry(id);
+    toast('Trade deleted', 'info');
+    await loadJournal();
+  } catch (err) {
+    toast('Failed to delete: ' + err.message, 'error');
+  }
+}
+</script>

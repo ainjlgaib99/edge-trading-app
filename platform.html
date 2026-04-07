@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform — App Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --accent: #c8ff00;
+      --bg:      #060608;
+      --surface: #0e0e14;
+      --card:    #13131a;
+      --border:  #1f1f2e;
+      --text:    #ddddf0;
+      --muted:   #50506a;
+      --green:   #00e87a;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      min-height: 100dvh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .header {
+      padding: 48px 48px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-mark {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 48px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .header-sub {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 24px;
+      padding: 48px;
+      max-width: 1100px;
+    }
+    .app-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color 0.12s, transform 0.12s;
+    }
+    .app-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .app-card.disabled { opacity: 0.5; pointer-events: none; }
+    .app-icon {
+      font-size: 32px;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .app-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 24px;
+      letter-spacing: 2px;
+      color: var(--accent);
+    }
+    .app-desc { font-size: 13px; color: var(--muted); line-height: 1.6; flex: 1; }
+    .app-status {
+      display: inline-flex;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      align-self: flex-start;
+    }
+    .status-live   { background: rgba(0,232,122,0.12); color: var(--green); }
+    .status-soon   { background: rgba(80,80,106,0.2);  color: var(--muted); }
+    .launch-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 20px;
+      background: var(--accent);
+      color: var(--bg);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: filter 0.12s;
+    }
+    .launch-btn:hover { filter: brightness(1.1); }
+    @media (max-width: 600px) { .header { padding: 32px 24px 24px; } .grid { padding: 24px; } }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-mark">PLATFORM.</div>
+  <div class="header-sub">Your app suite — one login, all tools</div>
+</div>
+
+<div class="grid">
+
+  <div class="app-card" style="border-color: rgba(200,255,0,0.2)">
+    <div class="app-icon">📊</div>
+    <div class="app-name">EDGE</div>
+    <div class="app-status status-live">● Live</div>
+    <div class="app-desc">Trading playbook, journal, timeline tracker, and risk rules for MNQ/MES futures traders.</div>
+    <a href="/" class="launch-btn">Launch EDGE →</a>
+  </div>
+
+  <div class="app-card disabled">
+    <div class="app-icon">📢</div>
+    <div class="app-name">AdOS</div>
+    <div class="app-status status-soon">Coming Soon</div>
+    <div class="app-desc">Ads manager for tracking campaigns, creatives, ROAS, and CPM across platforms.</div>
+    <button class="launch-btn" style="background:var(--surface);color:var(--muted);cursor:not-allowed" disabled>Coming Soon</button>
+  </div>
+
+  <div class="app-card disabled">
+    <div class="app-icon">🏗️</div>
+    <div class="app-name">FieldOS</div>
+    <div class="app-status status-soon">Coming Soon</div>
+    <div class="app-desc">Construction project tracker — constraints, field reports, and client management.</div>
+    <button class="launch-btn" style="background:var(--surface);color:var(--muted);cursor:not-allowed" disabled>Coming Soon</button>
+  </div>
+
+  <div class="app-card disabled">
+    <div class="app-icon">🤝</div>
+    <div class="app-name">Pipeline</div>
+    <div class="app-status status-soon">Coming Soon</div>
+    <div class="app-desc">Client CRM — leads, proposals, follow-ups, and deal tracking.</div>
+    <button class="launch-btn" style="background:var(--surface);color:var(--muted);cursor:not-allowed" disabled>Coming Soon</button>
+  </div>
+
+  <div class="app-card disabled">
+    <div class="app-icon">🧠</div>
+    <div class="app-name">Skills</div>
+    <div class="app-status status-soon">Coming Soon</div>
+    <div class="app-desc">AI skill browser — manage, test, and deploy your Claude Code skills.</div>
+    <button class="launch-btn" style="background:var(--surface);color:var(--muted);cursor:not-allowed" disabled>Coming Soon</button>
+  </div>
+
+</div>
+
+</body>
+</html>
