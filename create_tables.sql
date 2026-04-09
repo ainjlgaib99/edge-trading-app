@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS trader_settings (
   session_2_start TEXT,
   session_2_end TEXT,
   eval_status TEXT DEFAULT 'Paper Trading',
+  daily_goal NUMERIC DEFAULT 200,
   airtable_api_key TEXT,
   airtable_base_id TEXT,
   airtable_table_id TEXT,
