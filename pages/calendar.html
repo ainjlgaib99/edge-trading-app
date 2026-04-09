@@ -1,0 +1,264 @@
+<div class="page-inner">
+  <div class="page-header" style="margin-bottom:var(--space-4);">
+    <div>
+      <h1 class="page-title">Calendar</h1>
+      <p class="page-sub" id="calMonthLabel">—</p>
+    </div>
+    <div style="display:flex;gap:var(--space-2);align-items:center;">
+      <button class="btn btn-ghost btn-sm" onclick="calPrev()">←</button>
+      <button class="btn btn-ghost btn-sm" onclick="calToday()">Today</button>
+      <button class="btn btn-ghost btn-sm" onclick="calNext()">→</button>
+    </div>
+  </div>
+
+  <!-- Goal + Summary row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-3);margin-bottom:var(--space-4);">
+    <div class="card stat-card">
+      <div class="stat-label">Month P&L</div>
+      <div class="stat-value mono" id="calMonthPnl">$0</div>
+    </div>
+    <div class="card stat-card">
+      <div class="stat-label">Green Days</div>
+      <div class="stat-value" id="calGreenDays">0</div>
+    </div>
+    <div class="card stat-card" style="cursor:pointer;" onclick="editDailyGoal()">
+      <div class="stat-label">Daily Goal</div>
+      <div class="stat-value mono" id="calGoalDisplay">$200 ✎</div>
+    </div>
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="card" style="margin-bottom:var(--space-4);">
+    <!-- Day-of-week headers -->
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:var(--space-2);">
+      <div style="text-align:center;font-size:var(--text-xs);color:var(--muted);padding:var(--space-1);">Sun</div>
+      <div style="text-align:center;font-size:var(--text-xs);color:var(--muted);padding:var(--space-1);">Mon</div>
+      <div style="text-align:center;font-size:var(--text-xs);color:var(--muted);padding:var(--space-1);">Tue</div>
+      <div style="text-align:center;font-size:var(--text-xs);color:var(--muted);padding:var(--space-1);">Wed</div>
+      <div style="text-align:center;font-size:var(--text-xs);color:var(--muted);padding:var(--space-1);">Thu</div>
+      <div style="text-align:center;font-size:var(--text-xs);color:var(--muted);padding:var(--space-1);">Fri</div>
+      <div style="text-align:center;font-size:var(--text-xs);color:var(--muted);padding:var(--space-1);">Sat</div>
+    </div>
+    <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;"></div>
+  </div>
+
+  <!-- Day detail panel (shown on click) -->
+  <div id="calDayDetail" style="display:none;">
+    <div class="card">
+      <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+        <span id="calDayTitle">—</span>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('calDayDetail').style.display='none'">✕</button>
+      </div>
+      <div id="calDayTrades"></div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.cal-cell {
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  padding: 4px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  transition: opacity 0.15s;
+  min-height: 48px;
+}
+.cal-cell:hover { opacity: 0.8; border-color: var(--accent); }
+.cal-cell.today { border-color: var(--accent); border-width: 2px; }
+.cal-cell.empty { background: transparent; border-color: transparent; cursor: default; }
+.cal-cell.empty:hover { opacity: 1; }
+.cal-day-num { font-size: 10px; color: var(--muted); font-family: var(--font-mono); }
+.cal-pnl { font-size: 9px; font-family: var(--font-mono); font-weight: 600; }
+.cal-dot { width: 4px; height: 4px; border-radius: 50%; }
+@media (min-width: 400px) {
+  .cal-cell { min-height: 56px; }
+  .cal-day-num { font-size: 11px; }
+  .cal-pnl { font-size: 10px; }
+}
+</style>
+
+<script>
+let _calYear = new Date().getFullYear();
+let _calMonth = new Date().getMonth();
+let _calTrades = [];
+let _calDailyGoal = 200;
+
+async function init_calendar() {
+  const session = getAppSession();
+  if (!session) return;
+
+  // Load goal from trader settings
+  const settings = getTraderConfig();
+  if (settings?.daily_goal) _calDailyGoal = settings.daily_goal;
+
+  document.getElementById('calGoalDisplay').textContent = `$${_calDailyGoal} ✎`;
+
+  // Load all trades
+  try {
+    _calTrades = await getTrades(session.user.id);
+    renderCalendar();
+  } catch(e) { console.error(e); }
+}
+
+function renderCalendar() {
+  const year = _calYear, month = _calMonth;
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  // Update header
+  const monthName = new Date(year, month, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  document.getElementById('calMonthLabel').textContent = monthName;
+
+  // Build day → PnL map for this month
+  const monthStr = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const dayMap = {};
+  let monthPnl = 0, greenDays = 0;
+
+  _calTrades.forEach(t => {
+    if (!t.date || !t.date.startsWith(monthStr)) return;
+    const day = t.date.slice(8, 10);
+    if (!dayMap[day]) dayMap[day] = { pnl: 0, count: 0 };
+    dayMap[day].pnl += t.pnl || 0;
+    dayMap[day].count++;
+    monthPnl += t.pnl || 0;
+  });
+
+  Object.values(dayMap).forEach(d => { if (d.pnl > 0) greenDays++; });
+
+  // Month P&L
+  const mpEl = document.getElementById('calMonthPnl');
+  mpEl.textContent = (monthPnl >= 0 ? '+' : '') + '$' + Math.abs(monthPnl).toFixed(0);
+  mpEl.style.color = monthPnl >= 0 ? 'var(--green)' : 'var(--red)';
+  document.getElementById('calGreenDays').textContent = greenDays;
+
+  // Build grid
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const grid = document.getElementById('calGrid');
+  const cells = [];
+
+  // Leading empty cells
+  for (let i = 0; i < firstDay; i++) {
+    cells.push('<div class="cal-cell empty"></div>');
+  }
+
+  // Day cells
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dayStr = String(d).padStart(2, '0');
+    const fullDate = `${year}-${String(month + 1).padStart(2, '0')}-${dayStr}`;
+    const data = dayMap[dayStr];
+    const isToday = fullDate === todayStr;
+
+    let bg = 'var(--card)';
+    let pnlHtml = '';
+    let dotHtml = '';
+
+    if (data) {
+      const pnl = data.pnl;
+      const goalPct = Math.min(1, Math.abs(pnl) / _calDailyGoal);
+      if (pnl > 0) {
+        const alpha = 0.15 + goalPct * 0.35;
+        bg = `rgba(0,232,122,${alpha.toFixed(2)})`;
+        pnlHtml = `<span class="cal-pnl" style="color:var(--green);">+$${Math.abs(pnl).toFixed(0)}</span>`;
+      } else if (pnl < 0) {
+        const alpha = 0.15 + goalPct * 0.35;
+        bg = `rgba(255,51,86,${alpha.toFixed(2)})`;
+        pnlHtml = `<span class="cal-pnl" style="color:var(--red);">-$${Math.abs(pnl).toFixed(0)}</span>`;
+      } else {
+        pnlHtml = `<span class="cal-pnl" style="color:var(--muted);">BE</span>`;
+      }
+      dotHtml = `<div class="cal-dot" style="background:${data.count > 1 ? 'var(--accent)' : 'transparent'};"></div>`;
+    }
+
+    cells.push(`
+      <div class="cal-cell${isToday ? ' today' : ''}" style="background:${bg};" onclick="calShowDay('${fullDate}')">
+        <span class="cal-day-num" style="${isToday ? 'color:var(--accent);font-weight:700;' : ''}">${d}</span>
+        ${pnlHtml}
+        ${dotHtml}
+      </div>`);
+  }
+
+  grid.innerHTML = cells.join('');
+}
+
+function calShowDay(dateStr) {
+  const trades = _calTrades.filter(t => t.date === dateStr);
+  const detail = document.getElementById('calDayDetail');
+  const title = document.getElementById('calDayTitle');
+  const tradesEl = document.getElementById('calDayTrades');
+
+  const d = new Date(dateStr + 'T00:00:00');
+  title.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  if (!trades.length) {
+    tradesEl.innerHTML = `<div style="text-align:center;padding:var(--space-6);color:var(--muted);font-size:var(--text-sm);">No trades this day.</div>`;
+  } else {
+    const dayPnl = trades.reduce((s, t) => s + (t.pnl || 0), 0);
+    const sign = dayPnl >= 0 ? '+' : '';
+    tradesEl.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:var(--space-3) 0;border-bottom:1px solid var(--border);margin-bottom:var(--space-2);">
+        <span style="font-size:var(--text-sm);color:var(--muted);">${trades.length} trade${trades.length > 1 ? 's' : ''}</span>
+        <span style="font-family:var(--font-mono);font-weight:700;color:${dayPnl >= 0 ? 'var(--green)' : 'var(--red)'};">${sign}$${Math.abs(dayPnl).toFixed(0)}</span>
+      </div>
+      ${trades.map(t => {
+        const pnlColor = t.result === 'Win' ? 'var(--green)' : t.result === 'Loss' ? 'var(--red)' : 'var(--muted)';
+        const dir = t.direction === 'Long' ? '▲' : '▼';
+        const dirColor = t.direction === 'Long' ? 'var(--green)' : 'var(--red)';
+        return `<div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) 0;border-bottom:1px solid var(--border);">
+          <span style="color:${dirColor};width:14px;flex-shrink:0;font-size:var(--text-sm);">${dir}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--text-sm);font-weight:500;">${t.setup_type}</div>
+            <div style="font-size:var(--text-xs);color:var(--muted);">${t.instrument} · ${t.emotional_state || '—'}</div>
+          </div>
+          <span style="font-family:var(--font-mono);font-size:var(--text-sm);font-weight:600;color:${pnlColor};">${(t.pnl||0) >= 0 ? '+' : ''}$${Math.abs(t.pnl||0)}</span>
+        </div>`;
+      }).join('')}`;
+  }
+
+  detail.style.display = 'block';
+  detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function calPrev() {
+  _calMonth--;
+  if (_calMonth < 0) { _calMonth = 11; _calYear--; }
+  document.getElementById('calDayDetail').style.display = 'none';
+  renderCalendar();
+}
+
+function calNext() {
+  _calMonth++;
+  if (_calMonth > 11) { _calMonth = 0; _calYear++; }
+  document.getElementById('calDayDetail').style.display = 'none';
+  renderCalendar();
+}
+
+function calToday() {
+  const now = new Date();
+  _calYear = now.getFullYear();
+  _calMonth = now.getMonth();
+  document.getElementById('calDayDetail').style.display = 'none';
+  renderCalendar();
+}
+
+function editDailyGoal() {
+  const newGoal = prompt('Set daily P&L goal ($):', _calDailyGoal);
+  if (newGoal && !isNaN(parseFloat(newGoal))) {
+    _calDailyGoal = parseFloat(newGoal);
+    document.getElementById('calGoalDisplay').textContent = `$${_calDailyGoal} ✎`;
+    // Save to trader settings
+    const session = getAppSession();
+    if (session) {
+      saveTraderSettings(session.user.id, { daily_goal: _calDailyGoal }).catch(() => {});
+    }
+    renderCalendar();
+  }
+}
+</script>

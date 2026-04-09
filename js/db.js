@@ -311,6 +311,7 @@ const DEFAULT_TRADER_SETTINGS = {
   session_2_start: null,
   session_2_end: null,
   eval_status: 'Paper Trading',
+  daily_goal: 200,
   airtable_api_key: null,
   airtable_base_id: null,
   airtable_table_id: null,
@@ -504,6 +505,25 @@ async function savePropFirmAccount(userId, account) {
 async function deletePropFirmAccount(id) {
   const { error } = await _sb.from('prop_firm_accounts').delete().eq('id', id);
   if (error) throw error;
+}
+
+/* ══════════════════════════════
+   SCREENSHOT UPLOAD
+   Uploads a file/blob to Supabase storage bucket 'trade-screenshots'
+   Returns the public URL.
+══════════════════════════════ */
+
+async function uploadScreenshot(file, userId) {
+  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/jpeg' ? 'jpg' : 'png';
+  const path = `${userId}/${Date.now()}.${ext}`;
+  const { data, error } = await _sb.storage
+    .from('trade-screenshots')
+    .upload(path, file, { contentType: file.type, upsert: false });
+  if (error) throw error;
+  const { data: { publicUrl } } = _sb.storage
+    .from('trade-screenshots')
+    .getPublicUrl(data.path);
+  return publicUrl;
 }
 
 /* ── WEEKLY P&L for chart ── */

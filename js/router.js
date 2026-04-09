@@ -7,6 +7,8 @@ const ROUTES = {
   dashboard:               { path: 'pages/dashboard.html',              label: 'Dashboard',      parent: 'EDGE' },
   log:                     { path: 'pages/log.html',                    label: 'Log Trade',      parent: 'EDGE' },
   journal:                 { path: 'pages/journal.html',                label: 'Journal',        parent: 'EDGE' },
+  calendar:                { path: 'pages/calendar.html',               label: 'Calendar',       parent: 'EDGE' },
+  charts:                  { path: 'pages/charts.html',                 label: 'Charts',         parent: 'EDGE' },
   levels:                  { path: 'pages/levels.html',                 label: 'Levels',         parent: 'EDGE' },
   eval:                    { path: 'pages/eval.html',                   label: 'Eval Tracker',   parent: 'EDGE' },
   timeline:                { path: 'pages/timeline.html',               label: 'Timeline',       parent: 'EDGE' },

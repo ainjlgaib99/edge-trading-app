@@ -154,8 +154,18 @@
 
       <!-- Row 8: Screenshot -->
       <div class="form-group">
-        <label class="form-label">Screenshot URL</label>
-        <input type="url" class="form-input" id="f_screenshot" placeholder="Paste TradingView chart link...">
+        <label class="form-label">Screenshot</label>
+        <div style="display:flex;gap:var(--space-2);align-items:center;flex-wrap:wrap;">
+          <input type="url" class="form-input" id="f_screenshot" placeholder="Paste URL or use clipboard button →" style="flex:1;min-width:0;">
+          <button type="button" class="btn btn-secondary btn-sm" id="pasteScreenshotBtn" onclick="pasteScreenshot()" style="white-space:nowrap;flex-shrink:0;">
+            📋 Paste
+          </button>
+        </div>
+        <div id="screenshotPreview" style="display:none;margin-top:var(--space-3);">
+          <img id="screenshotImg" src="" alt="Screenshot preview" style="max-width:100%;border-radius:var(--radius-md);border:1px solid var(--border);max-height:200px;object-fit:contain;">
+          <button type="button" class="btn btn-ghost btn-sm" onclick="clearScreenshot()" style="margin-top:var(--space-2);">Remove ✕</button>
+        </div>
+        <div id="screenshotUploading" style="display:none;font-size:var(--text-xs);color:var(--accent);margin-top:var(--space-2);">Uploading...</div>
       </div>
 
     </div>
@@ -180,6 +190,82 @@ let _logDirection = 'Long';
 let _logFollowedRules = true;
 let _logTodayTrades = [];
 let _logSettings = null;
+
+async function pasteScreenshot() {
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const imageType = item.types.find(t => t.startsWith('image/'));
+      if (imageType) {
+        const blob = await item.getType(imageType);
+        await _uploadScreenshotBlob(blob);
+        return;
+      }
+    }
+    toast('No image found in clipboard', 'warning');
+  } catch(e) {
+    // Fallback: prompt user to paste into hidden file input
+    toast('Clipboard access denied — paste URL manually', 'warning');
+  }
+}
+
+// Also listen for Ctrl+V paste events anywhere on the form
+document.addEventListener('paste', async (e) => {
+  if (document.activeElement && document.activeElement.tagName === 'INPUT' && document.activeElement.id !== 'f_screenshot') return;
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      e.preventDefault();
+      const blob = item.getAsFile();
+      if (blob) await _uploadScreenshotBlob(blob);
+      return;
+    }
+  }
+}, { capture: false });
+
+async function _uploadScreenshotBlob(blob) {
+  const session = getAppSession();
+  if (!session) return;
+  const uploadingEl = document.getElementById('screenshotUploading');
+  const btn = document.getElementById('pasteScreenshotBtn');
+  uploadingEl.style.display = 'block';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳'; }
+  try {
+    const url = await uploadScreenshot(blob, session.user.id);
+    document.getElementById('f_screenshot').value = url;
+    showScreenshotPreview(url);
+    toast('Screenshot uploaded!', 'success');
+  } catch(err) {
+    // If bucket doesn't exist, fall back to local preview only
+    const localUrl = URL.createObjectURL(blob);
+    document.getElementById('f_screenshot').value = '';
+    showScreenshotPreview(localUrl);
+    toast('Bucket not set up — screenshot previewed locally only', 'warning');
+  } finally {
+    uploadingEl.style.display = 'none';
+    if (btn) { btn.disabled = false; btn.textContent = '📋 Paste'; }
+  }
+}
+
+function showScreenshotPreview(url) {
+  const preview = document.getElementById('screenshotPreview');
+  const img = document.getElementById('screenshotImg');
+  img.src = url;
+  preview.style.display = 'block';
+}
+
+function clearScreenshot() {
+  document.getElementById('f_screenshot').value = '';
+  document.getElementById('screenshotImg').src = '';
+  document.getElementById('screenshotPreview').style.display = 'none';
+}
+
+// Show preview when URL is typed/pasted
+document.getElementById('f_screenshot')?.addEventListener('change', function() {
+  if (this.value && this.value.startsWith('http')) showScreenshotPreview(this.value);
+  else { document.getElementById('screenshotPreview').style.display = 'none'; }
+});
 
 async function init_log() {
   const session = getAppSession();
